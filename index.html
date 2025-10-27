@@ -28,6 +28,7 @@
   .label{font-size:14px;color:var(--muted);}
   .num{font-size:34px;font-weight:700;}
   .out-num{color: #ff0000;} /* 赤色 */
+  .out-label{color: #ff0000;} /* 赤色 */
   .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding-bottom:6px;}
   .btn{padding:14px;border-radius:12px;border:none;font-size:18px;font-weight:700;box-shadow:0 2px 4px rgba(0,0,0,0.08);}
   .btn:active{transform:translateY(1px);}
@@ -54,7 +55,7 @@
     <div class="status" aria-hidden="false">
       <div class="big">INN: <span id="inning">1</span></div>
       <div class="big"><span id="topbottom">▲</span></div>
-      <div class="big">OUT: <span id="out" class="out-num">0</span></div>
+      <div class="big"><span class="out-label">OUT: </span><span id="out" class="out-num">0</span></div>
     </div>
     <div style="font-size:12px;color:#777;"></div>
   </div>
@@ -273,3 +274,4 @@
 </script>
 </body>
 </html>
+
