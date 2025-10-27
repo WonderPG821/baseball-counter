@@ -45,7 +45,7 @@
   .pitch-section, .score-section{display:flex;justify-content:flex-end;gap:10px;}
   .pitch-input, .score-input{width:60px;padding:8px;border:1px solid #ddd;border-radius:8px;text-align:center;font-size:16px;}
   .checkbox{margin: 10px 0;}
-  .log-output{background:#f8f9fa;padding:10px;border-radius:8px;margin-top:10px;max-height:200px;overflow:auto;color:#111111;display:none;} /* 初期状態: 非表示 */
+  .log-output{background:#f8f9fa;padding:10px;border-radius:8px;margin-top:10px;max-height:200px;overflow:auto;color:#111111;display:none;}
   @media (max-width:420px){
     .card{min-width:90px;min-height:72px;}
     .num{font-size:32px;}
@@ -54,341 +54,342 @@
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="topbar">
-    <div class="status" aria-hidden="false">
-      <div class="big">INN: <span id="inning">1</span></div>
-      <div class="big"><span id="topbottom">▲</span></div>
-      <div class="big"><span class="out-label">OUT: </span><span id="out" class="out-num">0</span></div>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="status" aria-hidden="false">
+        <div class="big">INN: <span id="inning">1</span></div>
+        <div class="big"><span id="topbottom">▲</span></div>
+        <div class="big"><span class="out-label">OUT: </span><span id="out" class="out-num">0</span></div>
+      </div>
     </div>
-  </div>
 
-  <div class="score-section">
-    <div id="team1Label" class="card clickable">
-      <div class="label">先攻</div>
-      <input type="number" id="score1" class="score-input" value="0" />
+    <div class="score-section">
+      <div id="team1Label" class="card clickable">
+        <div class="label">先攻</div>
+        <input type="number" id="score1" class="score-input" value="0" />
+      </div>
+      <div id="team2Label" class="card clickable">
+        <div class="label">後攻</div>
+        <input type="number" id="score2" class="score-input" value="0" />
+      </div>
     </div>
-    <div id="team2Label" class="card clickable">
-      <div class="label">後攻</div>
-      <input type="number" id="score2" class="score-input" value="0" />
-    </div>
-  </div>
 
-  <div class="center">
-    <div class="counts">
-      <div class="count-row">
-        <div id="strikeCard" class="card clickable" role="button" aria-label="Strike を増やす">
-          <div class="label">STRIKE</div>
-          <div class="num" id="strike">0</div>
-        </div>
-        <div id="ballCard" class="card clickable" role="button" aria-label="Ball を増やす">
-          <div class="label">BALL</div>
-          <div class="num" id="ball">0</div>
+    <div class="center">
+      <div class="counts">
+        <div class="count-row">
+          <div id="strikeCard" class="card clickable" role="button" aria-label="Strike を増やす">
+            <div class="label">STRIKE</div>
+            <div class="num" id="strike">0</div>
+          </div>
+          <div id="ballCard" class="card clickable" role="button" aria-label="Ball を増やす">
+            <div class="label">BALL</div>
+            <div class="num" id="ball">0</div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="controls">
-    <button class="btn btn-primary" id="strikeBtn">STRIKE +</button>
-    <button class="btn btn-primary" id="ballBtn">BALL +</button>
-    <button class="btn btn-muted" id="outBtn">OUT +</button>
-  
-    <button class="btn btn-secondary wide" id="pitchBtn">PITCH +</button>
-    <button class="btn btn-muted" id="sbReset">S/B RESET</button>
-    <button class="btn btn-muted" id="toggleTopBottom">▲/▼</button>
-  
-    <button class="btn btn-muted" id="inningInc">INN +</button>
-    <button class="btn btn-reset" id="resetAll">ALL RESET</button>
-    <button class="btn btn-muted" id="showLog">ログ表示/非表示</button>
-  </div>
+    <div class="controls">
+      <button class="btn btn-primary" id="strikeBtn">STRIKE +</button>
+      <button class="btn btn-primary" id="ballBtn">BALL +</button>
+      <button class="btn btn-muted" id="outBtn">OUT +</button>
 
-  <div class="pitch-section">
-    <div>
-      <div class="label">Pitches 後攻</div>
-      <input type="number" id="pitch1" class="pitch-input" value="0" />
+      <button class="btn btn-secondary wide" id="pitchBtn">PITCH +</button>
+      <button class="btn btn-muted" id="sbReset">S/B RESET</button>
+      <button class="btn btn-muted" id="toggleTopBottom">▲/▼</button>
+
+      <button class="btn btn-muted" id="inningInc">INN +</button>
+      <button class="btn btn-reset" id="resetAll">ALL RESET</button>
+      <button class="btn btn-muted" id="showLog">ログ表示/非表示</button>
+      <button class="btn btn-muted" id="copyLog">ログコピー</button>
     </div>
-    <div>
-      <div class="label">Pitches 先攻</div>
-      <input type="number" id="pitch2" class="pitch-input" value="0" />
+
+    <div class="pitch-section">
+      <div>
+        <div class="label">Pitches 後攻</div>
+        <input type="number" id="pitch1" class="pitch-input" value="0" />
+      </div>
+      <div>
+        <div class="label">Pitches 先攻</div>
+        <input type="number" id="pitch2" class="pitch-input" value="0" />
+      </div>
     </div>
+    
+    <div class="checkbox">
+      <label><input type="checkbox" id="autoProcess" checked> Ball4/Strike3/Out3 自動処理</label>
+    </div>
+
+    <div class="footer">
+      <div>保存: 自動（localStorage）</div>
+    </div>
+    
+    <div class="log-output" id="logOutput"></div>
   </div>
-  
-  <div class="checkbox">
-    <label><input type="checkbox" id="autoProcess" checked> Ball4/Strike3/Out3 自動処理</label>
-  </div>
 
-  <div class="footer">
-    <div></div>
-  </div>
-  
-  <div class="log-output" id="logOutput"></div>
-</div>
+  <script>
+  (function(){
+    const state = {
+      strike:0,
+      ball:0,
+      out:0,
+      inning:1,
+      topBottom: 'top',
+      pitch1:0,
+      pitch2:0,
+      score1:0,
+      score2:0,
+      log: []
+    };
 
-<script>
-(function(){
-  const state = {
-    strike:0,
-    ball:0,
-    out:0,
-    inning:1,
-    topBottom: 'top',
-    pitch1:0,
-    pitch2:0,
-    score1:0,
-    score2:0,
-    log: []
-  };
+    const el = id => document.getElementById(id);
+    const r = {
+      strike: el('strike'),
+      ball: el('ball'),
+      out: el('out'),
+      inning: el('inning'),
+      topbottom: el('topbottom'),
+      pitch1: el('pitch1'),
+      pitch2: el('pitch2'),
+      score1: el('score1'),
+      score2: el('score2'),
+      team1Label: el('team1Label'),
+      team2Label: el('team2Label'),
+      strikeCard: el('strikeCard'),
+      ballCard: el('ballCard'),
+      logOutput: el('logOutput')
+    };
 
-  const el = id => document.getElementById(id);
-  const r = {
-    strike: el('strike'),
-    ball: el('ball'),
-    out: el('out'),
-    inning: el('inning'),
-    topbottom: el('topbottom'),
-    pitch1: el('pitch1'),
-    pitch2: el('pitch2'),
-    score1: el('score1'),
-    score2: el('score2'),
-    team1Label: el('team1Label'),
-    team2Label: el('team2Label'),
-    strikeCard: el('strikeCard'),
-    ballCard: el('ballCard'),
-    logOutput: el('logOutput')
-  };
+    const KEY = 'bb_ump_counter_v1';
 
-  const KEY = 'bb_ump_counter_v1';
-
-  function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
-  function load(){
-    const v = localStorage.getItem(KEY);
-    if(v){
-      try{ Object.assign(state, JSON.parse(v)); }catch(e){}
-    }
-  }
-
-  function render(){
-    r.strike.textContent = state.strike;
-    r.ball.textContent = state.ball;
-    r.out.textContent = state.out;
-    r.inning.textContent = state.inning;
-    r.topbottom.textContent = state.topBottom === 'top' ? '▲' : '▼';
-    r.pitch1.value = state.pitch1;
-    r.pitch2.value = state.pitch2;
-    r.score1.value = state.score1;
-    r.score2.value = state.score2;
-
-    if(state.strike > 0){
-      r.strikeCard.classList.add('strike-active');
-    } else {
-      r.strikeCard.classList.remove('strike-active');
-    }
-    if(state.ball > 0){
-      r.ballCard.classList.add('ball-active');
-    } else {
-      r.ballCard.classList.remove('ball-active');
+    function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+    function load(){
+      const v = localStorage.getItem(KEY);
+      if(v){
+        try{ Object.assign(state, JSON.parse(v)); }catch(e){}
+      }
     }
 
-    if(state.topBottom === 'bottom'){
-      document.body.style.backgroundColor = '#111111';
-      document.body.style.color = '#ffffff';
-    } else {
-      document.body.style.backgroundColor = 'var(--bg)';
-      document.body.style.color = 'var(--fg)';
-    }
+    function render(){
+      r.strike.textContent = state.strike;
+      r.ball.textContent = state.ball;
+      r.out.textContent = state.out;
+      r.inning.textContent = state.inning;
+      r.topbottom.textContent = state.topBottom === 'top' ? '▲' : '▼';
+      r.pitch1.value = state.pitch1;
+      r.pitch2.value = state.pitch2;
+      r.score1.value = state.score1;
+      r.score2.value = state.score2;
 
-    r.strikeCard.style.color = '#111111';
-    r.ballCard.style.color = '#111111';
-
-    // スコアのハイライト
-    highlightScore();
-  }
-
-  function highlightScore(){
-    if (state.topBottom === 'top') {
-        r.team1Label.style.backgroundColor = '#fff7d9'; // 先攻を黄色
-        r.team2Label.style.backgroundColor = ''; // 後攻の色をリセット
-    } else {
-        r.team1Label.style.backgroundColor = ''; // 先攻の色をリセット
-        r.team2Label.style.backgroundColor = '#fff7d9'; // 後攻を黄色
-    }
-  }
-
-  function logAction(action) {
-    const context = `INN:${state.inning} ${state.topBottom === 'top' ? '▲' : '▼'}`;
-    state.log.push(`${context} - ${action}`);
-    save();
-  }
-
-  function increasePitch(){
-    if(state.topBottom === 'top'){
-      state.pitch1++;
-    } else {
-      state.pitch2++;
-    }
-  }
-
-  function handleOutThree(){
-    if(state.out >= 3 && document.getElementById('autoProcess').checked){
-      state.out = 0;
-      if(state.topBottom === 'top'){
-        state.topBottom = 'bottom';
+      if(state.strike > 0){
+        r.strikeCard.classList.add('strike-active');
       } else {
-        state.topBottom = 'top';
-        state.inning++;
+        r.strikeCard.classList.remove('strike-active');
+      }
+      if(state.ball > 0){
+        r.ballCard.classList.add('ball-active');
+      } else {
+        r.ballCard.classList.remove('ball-active');
+      }
+
+      if(state.topBottom === 'bottom'){
+        document.body.style.backgroundColor = '#111111';
+        document.body.style.color = '#ffffff';
+      } else {
+        document.body.style.backgroundColor = 'var(--bg)';
+        document.body.style.color = 'var(--fg)';
+      }
+
+      r.strikeCard.style.color = '#111111';
+      r.ballCard.style.color = '#111111';
+
+      highlightScore();
+    }
+
+    function logAction(action) {
+      const context = `INN:${state.inning} ${state.topBottom === 'top' ? '▲' : '▼'}`;
+      state.log.push(`${context} - ${action}`);
+      save();
+    }
+
+    function increasePitch(){
+      if(state.topBottom === 'top'){
+        state.pitch1++;
+      } else {
+        state.pitch2++;
       }
     }
-  }
 
-  function onScore1(){
-    state.score1++;
-    logAction("先攻 スコア");
-    save(); render();
-  }
-  
-  function onScore2(){
-    state.score2++;
-    logAction("後攻 スコア");
-    save(); render();
-  }
-
-  function onStrike(){
-    state.strike++;
-    increasePitch();
-    logAction("ストライク");
-    if(state.strike >= 3){
-      if(document.getElementById('autoProcess').checked){
-        state.out++;
-        handleOutThree();
+    function handleOutThree(){
+      if(state.out >= 3 && document.getElementById('autoProcess').checked){
+        state.out = 0;
+        if(state.topBottom === 'top'){
+          state.topBottom = 'bottom';
+        } else {
+          state.topBottom = 'top';
+          state.inning++;
+        }
       }
+    }
+
+    function onScore1(){
+      state.score1++;
+      logAction("先攻 スコア");
+      save(); render();
+    }
+    
+    function onScore2(){
+      state.score2++;
+      logAction("後攻 スコア");
+      save(); render();
+    }
+
+    function onStrike(){
+        state.strike++;
+        increasePitch();
+        logAction("ストライク");
+        if(state.strike >= 3){
+            if(document.getElementById('autoProcess').checked){
+                state.out++;
+                logAction(`アウト - OUT: ${state.out}`); // 追加: アウトカウントをログに記録
+                handleOutThree();
+            }
+            state.strike = 0;
+            state.ball = 0;
+        }
+        save(); render();
+    }
+    
+    function onBall(){
+      state.ball++;
+      increasePitch();
+      logAction("ボール");
+      if(state.ball >= 4){
+        state.strike = 0;
+        state.ball = 0;
+      }
+      save(); render();
+    }
+
+    function onOut(){
+      state.out++;
+      logAction("アウト");
+      handleOutThree();
+      save(); render();
+    }
+
+    function onPitch(){
+      increasePitch();
+      logAction("投球");
+      save(); render();
+    }
+
+    function onSBReset(){
       state.strike = 0;
       state.ball = 0;
+      logAction("S/B リセット");
+      save(); render();
     }
-    save(); render();
-  }
 
-  function onBall(){
-    state.ball++;
-    increasePitch();
-    logAction("ボール");
-    if(state.ball >= 4){
+    function onToggleTopBottom(){
+      state.topBottom = state.topBottom === 'top' ? 'bottom' : 'top';
+      logAction("イニング変更");
+      save(); render();
+    }
+
+    function onInningInc(){
+      state.inning++;
+      logAction("イニング");
+      save(); render();
+    }
+
+    function onResetAll(){
       state.strike = 0;
       state.ball = 0;
+      state.out = 0;
+      state.inning = 1;
+      state.topBottom = 'top';
+      state.pitch1 = 0;
+      state.pitch2 = 0;
+      state.score1 = 0;
+      state.score2 = 0;
+      state.log = [];
+      logAction("全リセット");
+      save(); render();
     }
-    save(); render();
-  }
 
-  function onOut(){
-    state.out++;
-    logAction("アウト");
-    handleOutThree();
-    save(); render();
-  }
-
-  function onPitch(){
-    increasePitch();
-    logAction("投球");
-    save(); render();
-  }
-
-  function onSBReset(){
-    state.strike = 0;
-    state.ball = 0;
-    logAction("S/B リセット");
-    save(); render();
-  }
-
-  function onToggleTopBottom(){
-    state.topBottom = state.topBottom === 'top' ? 'bottom' : 'top';
-    logAction("イニング変更");
-    save(); render();
-  }
-
-  function onInningInc(){
-    state.inning++;
-    logAction("イニング");
-    save(); render();
-  }
-
-  function onResetAll(){
-    state.strike = 0;
-    state.ball = 0;
-    state.out = 0;
-    state.inning = 1;
-    state.topBottom = 'top';
-    state.pitch1 = 0;
-    state.pitch2 = 0;
-    state.score1 = 0;
-    state.score2 = 0;
-    state.log = [];
-    logAction("全リセット");
-    save(); render();
-  }
-
-  function toggleLog(){
-    if(r.logOutput.style.display === 'none') {
-      r.logOutput.innerHTML = state.log.join('<br>');
-      r.logOutput.style.display = 'block';
-    } else {
-      r.logOutput.style.display = 'none';
+    function toggleLog(){
+      if(r.logOutput.style.display === 'none' || r.logOutput.style.display === '') {
+        r.logOutput.innerHTML = state.log.join('<br>');
+        r.logOutput.style.display = 'block';
+      } else {
+        r.logOutput.style.display = 'none';
+      }
     }
-  }
 
-  document.getElementById('strikeBtn').addEventListener('click', onStrike);
-  document.getElementById('ballBtn').addEventListener('click', onBall);
- document.getElementById('outBtn').addEventListener('click', onOut);
-document.getElementById('pitchBtn').addEventListener('click', onPitch);
-document.getElementById('sbReset').addEventListener('click', onSBReset);
-document.getElementById('toggleTopBottom').addEventListener('click', onToggleTopBottom);
-document.getElementById('inningInc').addEventListener('click', onInningInc);
-document.getElementById('resetAll').addEventListener('click', function(){
-  if(confirm('全てリセットしてよいですか？')) onResetAll();
-});
-document.getElementById('showLog').addEventListener('click', toggleLog);
+    async function copyLog(){
+      try {
+        await navigator.clipboard.writeText(state.log.join('\n'));
+        alert("ログがクリップボードにコピーされました");
+      } catch (error) {
+        alert("コピーに失敗しました");
+      }
+    }
 
-r.strikeCard.addEventListener('click', onStrike);
-r.ballCard.addEventListener('click', onBall);
-r.team1Label.addEventListener('click', onScore1);
-r.team2Label.addEventListener('click', onScore2);
+    function highlightScore(){
+      if (state.topBottom === 'top') {
+          r.team1Label.style.backgroundColor = '#fff7d9';
+          r.team2Label.style.backgroundColor = '';
+      } else {
+          r.team1Label.style.backgroundColor = '';
+          r.team2Label.style.backgroundColor = '#fff7d9';
+      }
+    }
 
-r.pitch1.addEventListener('change', function(){
-  state.pitch1 = parseInt(r.pitch1.value) || 0;
-  save();
-});
+    document.getElementById('strikeBtn').addEventListener('click', onStrike);
+    document.getElementById('ballBtn').addEventListener('click', onBall);
+    document.getElementById('outBtn').addEventListener('click', onOut);
+    document.getElementById('pitchBtn').addEventListener('click', onPitch);
+    document.getElementById('sbReset').addEventListener('click', onSBReset);
+    document.getElementById('toggleTopBottom').addEventListener('click', onToggleTopBottom);
+    document.getElementById('inningInc').addEventListener('click', onInningInc);
+    document.getElementById('resetAll').addEventListener('click', function(){
+      if(confirm('全てリセットしてよいですか？')) onResetAll();
+    });
+    document.getElementById('showLog').addEventListener('click', toggleLog);
+    document.getElementById('copyLog').addEventListener('click', copyLog);
 
-r.pitch2.addEventListener('change', function(){
-  state.pitch2 = parseInt(r.pitch2.value) || 0;
-  save();
-});
+    r.strikeCard.addEventListener('click', onStrike);
+    r.ballCard.addEventListener('click', onBall);
+    r.team1Label.addEventListener('click', onScore1);
+    r.team2Label.addEventListener('click', onScore2);
 
-r.score1.addEventListener('change', function(){
-  state.score1 = parseInt(r.score1.value) || 0;
-  save();
-});
+    r.pitch1.addEventListener('change', function(){
+      state.pitch1 = parseInt(r.pitch1.value) || 0;
+      save();
+    });
 
-r.score2.addEventListener('change', function(){
-  state.score2 = parseInt(r.score2.value) || 0;
-  save();
-});
+    r.pitch2.addEventListener('change', function(){
+      state.pitch2 = parseInt(r.pitch2.value) || 0;
+      save();
+    });
 
-function highlightScore(){
-  if (state.topBottom === 'top') {
-    r.team1Label.style.backgroundColor = '#fff7d9'; // 先攻を黄色
-    r.team2Label.style.backgroundColor = '';
-  } else {
-    r.team1Label.style.backgroundColor = '';
-    r.team2Label.style.backgroundColor = '#fff7d9'; // 後攻を黄色
-  }
-}
+    r.score1.addEventListener('change', function(){
+      state.score1 = parseInt(r.score1.value) || 0;
+      save();
+    });
 
-load();
-render();
-highlightScore();
+    r.score2.addEventListener('change', function(){
+      state.score2 = parseInt(r.score2.value) || 0;
+      save();
+    });
 
-document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'hidden') save(); });
+    load();
+    render();
+    highlightScore();
 
-})();
-</script>
+    document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'hidden') save(); });
+
+  })();
+  </script>
 </body>
 </html>
