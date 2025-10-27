@@ -56,7 +56,7 @@
     <div class="status" aria-hidden="false">
       <div class="big">INN: <span id="inning">1</span></div>
       <div class="big"><span id="topbottom">▲</span></div>
-      <div class="big"><span class="out-label">　OUT: </span><span id="out" class="out-num">0</span></div>
+      <div class="big"><span class="out-label">OUT: </span><span id="out" class="out-num">0</span></div>
     </div>
     <div style="font-size:12px;color:#777;"></div>
   </div>
@@ -180,7 +180,7 @@
   }
 
   function handleOutThree(){
-    if(state.out >= 3){
+    if(state.out >= 3 && document.getElementById('autoProcess').checked){
       state.out = 0;
       if(state.topBottom === 'top'){
         state.topBottom = 'bottom';
@@ -194,7 +194,7 @@
   function onStrike(){
     state.strike++;
     increasePitch();
-    if(document.getElementById('autoProcess').checked && state.strike >= 3){
+    if(state.strike >= 3){
       state.out++;
       state.strike = 0;
       state.ball = 0;
@@ -205,7 +205,7 @@
   function onBall(){
     state.ball++;
     increasePitch();
-    if(document.getElementById('autoProcess').checked && state.ball >= 4){
+    if(state.ball >= 4){
       state.strike = 0;
       state.ball = 0;
     }
@@ -213,9 +213,7 @@
   }
   function onOut(){
     state.out++;
-    if(document.getElementById('autoProcess').checked){
-      handleOutThree();
-    }
+    handleOutThree();
     save(); render();
   }
   function onPitch(){
