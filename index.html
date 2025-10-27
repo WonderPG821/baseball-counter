@@ -195,10 +195,12 @@
     state.strike++;
     increasePitch();
     if(state.strike >= 3){
-      state.out++;
-      state.strike = 0;
-      state.ball = 0;
-      handleOutThree();
+        if(document.getElementById('autoProcess').checked){
+            state.out++;
+            handleOutThree();
+        }
+        state.strike = 0;
+        state.ball = 0;
     }
     save(); render();
   }
@@ -278,3 +280,4 @@
 </script>
 </body>
 </html>
+
