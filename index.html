@@ -42,6 +42,7 @@
   .card.ball-active{background:var(--ball-color);border:1px solid #f1e4a8;}
   .pitch-section{display:flex;justify-content:flex-end;gap:10px;}
   .pitch-input{width:60px;padding:8px;border:1px solid #ddd;border-radius:8px;text-align:center;font-size:16px;}
+  .checkbox{margin: 10px 0;}
   @media (max-width:420px){
     .card{min-width:90px;min-height:72px;}
     .num{font-size:32px;}
@@ -93,10 +94,13 @@
     <input type="number" id="pitch1" class="pitch-input" value="0" />
     <input type="number" id="pitch2" class="pitch-input" value="0" />
   </div>
+  
+  <div class="checkbox">
+    <label><input type="checkbox" id="autoProcess" checked> Ball4/Strike3/Out3 自動処理</label>
+  </div>
 
   <div class="footer">
     <div>保存: 自動（localStorage）</div>
-    <div style="color:#b00;font-weight:700;">※Ball4/Strike3/Out3は自動処理</div>
   </div>
 </div>
 
@@ -190,7 +194,7 @@
   function onStrike(){
     state.strike++;
     increasePitch();
-    if(state.strike >= 3){
+    if(document.getElementById('autoProcess').checked && state.strike >= 3){
       state.out++;
       state.strike = 0;
       state.ball = 0;
@@ -201,7 +205,7 @@
   function onBall(){
     state.ball++;
     increasePitch();
-    if(state.ball >= 4){
+    if(document.getElementById('autoProcess').checked && state.ball >= 4){
       state.strike = 0;
       state.ball = 0;
     }
@@ -209,7 +213,9 @@
   }
   function onOut(){
     state.out++;
-    handleOutThree();
+    if(document.getElementById('autoProcess').checked){
+      handleOutThree();
+    }
     save(); render();
   }
   function onPitch(){
@@ -274,5 +280,3 @@
 </script>
 </body>
 </html>
-
-
