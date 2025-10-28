@@ -40,18 +40,21 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
 .right-stats{min-width:150px;background:var(--panel);padding:10px;border-radius:10px}
 .rhe-row{display:flex;justify-content:space-between;padding:6px 0}
 .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
-.btn{background:var(--panel);border-radius:10px;padding:12px 16px;min-width:110px;text-align:center;cursor:pointer;user-select:none;border:1px solid #222}
+.btn{background:var(--panel);border-radius:10px;padding:12px 16px;min-width:80px;text-align:center;cursor:pointer;user-select:none;border:1px solid #222}
 .pcounts{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:0px}
 .pcount{flex:1;background:var(--panel);padding:10px;border-radius:10px;text-align:center;max-width:120px}
 .pcount .label{color:white;font-size:13px;font-weight:bold}
 .pcount .num{font-size:32px;font-weight:700;margin-top:6px}
 .swap-area{display:flex;flex-direction:column;gap:6px;align-items:center}
 .counter-box .label{color:white;font-size:14px;font-weight:bold}
+.counter-box2 .label{color:white;font-size:14px;font-weight:bold}
 .counters{display:flex;gap:12px;justify-content:center;margin-top:8px;flex-wrap:wrap}
 .counter-box{background:var(--panel);padding:10px;border-radius:8px;min-width:88px;text-align:center}
+.counter-box2{background:var(--panel);padding:10px;border-radius:8px;min-width:170px;text-align:center}
 .lamp{width:14px;height:14px;border-radius:50%;border:2px solid var(--muted);margin:2px;display:inline-block}
 .controls-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px}
 .counter-box .lamps{display:flex;gap:4px;justify-content:center;margin-top:6px} /* ランプ横並び */
+.counter-box2 .lamps{display:flex;gap:4px;justify-content:center;margin-top:6px} /* ランプ横並び */
 .note{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
 @media (max-width:600px){
   .team .score{font-size:34px}
@@ -221,7 +224,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
   <div class="actions" id="main-actions-row">
     <div class="btn" id="btn-run">Run</div>
     <div class="btn" id="btn-hit-simple">Hit</div>
-    <div class="btn" id="btn-hit-trigger">Hit (詳細入力)</div>
+    <div class="btn" id="btn-hit-trigger">Hit 詳細</div>
     <div class="btn" id="btn-deadball">Dead Ball</div>
     <div class="btn" id="btn-error">Error</div>
   </div>
@@ -272,14 +275,14 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
       </div>
     </div>
 
-    <div class="counter-box">
+    <div class="counter-box2">
       <div class="lamps">
         <span class="lamp" id="strike1"></span>
         <span class="lamp" id="strike2"></span>
       </div>
       <div style="display:flex; gap:8px; margin-top:6px;"> 
-        <button class="btn" id="btn-strike-s" style="flex:1; padding:10px 14px; min-width:unset;">Swing</button>
-        <button class="btn" id="btn-strike-k" style="flex:1; padding:10px 14px; min-width:unset;">K(Look)</button>
+        <button class="btn" id="btn-strike-s" style="flex:1; padding:10px 14px; min-width:unset;">空振り</button>
+        <button class="btn" id="btn-strike-k" style="flex:1; padding:10px 14px; min-width:unset;">見逃し</button>
       </div>
     </div>
 
