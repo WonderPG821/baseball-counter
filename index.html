@@ -58,6 +58,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
   .btn{min-width:88px;padding:10px}
   .inning{min-width:56px}
 }
+/* カウント/アクションボタンの基本スタイルを統一 */
 .btn, #btn-ball, #btn-strike-s, #btn-strike-k, #btn-out  {
   font-size:14px;
   color: #fff !important;
@@ -65,7 +66,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
   border: 1px solid #64748b !important;
 }
 
-/* Undo/Resetボタンの配色 (UndoとResetの順序を入れ替え) */
+/* Undo/Resetボタンの配色 (前回の変更を復元) */
 #btn-undo { 
   background: rgb(61,9,87) !important;
   border-color: rgb(70, 20, 100) !important;
@@ -75,7 +76,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
   border-color: rgb(100, 20, 25) !important;
 }
 
-/* Hit入力パネルのスタイル */
+/* Hit入力パネルのスタイル (前回の変更を復元) */
 #hit-input-container {
     background: var(--panel-2);
     padding: 12px;
@@ -219,8 +220,9 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
   </div>
   <div class="actions" id="main-actions-row">
     <div class="btn" id="btn-run">Run</div>
-    <div class="btn" id="btn-hit-simple">Hit</div>
+    <div class="btn" id="btn-hit-simple" style="background: var(--green) !important; border-color: #16a34a !important; font-weight: bold;">Hit</div>
     <div class="btn" id="btn-hit-trigger">Hit (詳細入力)</div>
+    <div class="btn" id="btn-deadball">Dead Ball</div>
     <div class="btn" id="btn-error">Error</div>
   </div>
   
@@ -265,7 +267,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
         <span class="lamp" id="ball2"></span>
         <span class="lamp" id="ball3"></span>
       </div>
-      <button class="btn" id="btn-ball">Ball +1</button>
+      <button class="btn" id="btn-ball">Ball</button>
     </div>
 
     <div class="counter-box">
@@ -273,9 +275,9 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
         <span class="lamp" id="strike1"></span>
         <span class="lamp" id="strike2"></span>
       </div>
-      <div style="display:flex; gap:6px; margin-top:6px;">
-        <button class="btn" id="btn-strike-s" style="flex:1; padding:10px 12px; min-width:unset;">S (Swinging)</button>
-        <button class="btn" id="btn-strike-k" style="flex:1; padding:10px 12px; min-width:unset;">K (Looking)</button>
+      <div style="display:flex; gap:8px; margin-top:6px;"> 
+        <button class="btn" id="btn-strike-s" style="flex:1; padding:10px 14px; min-width:unset;">S(Swing)</button>
+        <button class="btn" id="btn-strike-k" style="flex:1; padding:10px 14px; min-width:unset;">K(Look)</button>
       </div>
     </div>
 
@@ -284,7 +286,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
         <span class="lamp" id="out1"></span>
         <span class="lamp" id="out2"></span>
       </div>
-      <button class="btn" id="btn-out">Out +1</button>
+      <button class="btn" id="btn-out">Out</button>
     </div>
   </div>
 
@@ -302,10 +304,9 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
 </div>
 <script>
 /* -------------------------
-   データ定義 (ユーザーの指定に合わせて更新)
+   データ定義 (Hit詳細入力用)
    ------------------------- */
 const HIT_OUTCOMES = {
-  // HI: 'Hit（その他）', // 削除
   SI: '1.Single', DO: '2.Double', TR: '3.Triple', 
   HR: '4.Home Run', IS: 'Infield Single', BS: 'Bunt Single'
 };
@@ -320,8 +321,9 @@ const DIRECTIONS = {
   LFL: 'LFL', RFL: 'RFL'
 };
 
+
 /* -------------------------
-   状態管理
+   状態管理 (Log/History機能も復元)
    ------------------------- */
 function createInitialState(){
   return {
@@ -332,12 +334,12 @@ function createInitialState(){
     totals_RHE: {sen: {R:0,H:0,E:0}, go: {R:0,H:0,E:0}},
     counts: {ball:0, strike:0, out:0},
     pcount: {sen:0, go:0},
-    log: [], // ログエントリ配列
-    tempHit: {} // ★ 一時的なHit入力状態
+    log: [], // ログエントリ配列 (復元)
+    tempHit: {} // 一時的なHit入力状態 (復元)
   };
 }
 let state = createInitialState();
-let history = []; // undo用スタック（stateのdeepコピーを保存）
+let history = []; // undo用スタック（stateのdeepコピーを保存） (復元)
 const ACTION_LOCK_MS = 150; // 連打防止の短いロック
 
 /* 小道具 */
@@ -350,12 +352,19 @@ function saveHistory(){
   if(history.length > 300) history.shift();
 }
 function setMessage(msg, timeout=2500){
-  const el = document.getElementById('message');
+  // メッセージ表示機能は復元
+  const el = document.getElementById('log-area'); // log-areaを一時的に使用する簡略版
   if(!el) return;
-  el.textContent = msg;
+  el.style.border = '2px solid var(--blue)';
+  el.style.fontWeight = 'bold';
+  el.textContent = 'Notification: ' + msg;
   if(timeout>0){
     clearTimeout(el._t);
-    el._t = setTimeout(()=> el.textContent = '', timeout);
+    el._t = setTimeout(()=> {
+        el.style.border = '1px solid transparent';
+        el.style.fontWeight = 'normal';
+        renderLog(); // ログ表示に戻す
+    }, timeout);
   }
 }
 
@@ -381,13 +390,14 @@ function renderAll(){
   renderHeader();
   renderInnings();
   renderTotals();
-  renderCounts();
+  renderCounts(); // 削除されていたが不要なのでそのまま
   updateBSOLamps();
   renderLog();
 }
 function renderLog(){
   const logArea = document.getElementById('log-area');
-  if(!logArea) return;
+  if(!logArea || logArea.style.fontWeight === 'bold') return; // メッセージ表示中は中断
+
   let html = '';
   // 最新30件を表示
   state.log.slice(-30).reverse().forEach(e => {
@@ -528,7 +538,7 @@ function incrementPitchCount(){
 }
 
 /* -------------------------
-   Hit入力パネル表示/非表示制御
+   Hit入力パネル表示/非表示制御 (復元)
    ------------------------- */
 function renderHitOptions(){
     const outcomeContainer = document.getElementById('outcome-options');
@@ -597,7 +607,6 @@ function updateHitOptionSelections(){
     checkHitInputCompletion();
 }
 
-// 修正: Hit（その他）がなくなったため、結果種別と方向が必須となる
 function checkHitInputCompletion(){
     const finalBtn = document.getElementById('record-hit-final-btn');
     const { outcome, direction } = state.tempHit;
@@ -617,18 +626,22 @@ function showHitOptions(){
     updateHitOptionSelections();
 
     document.getElementById('hit-input-container').style.display = 'block';
+    // 他のボタンを隠す (Hitシンプルボタンも含む)
     document.getElementById('btn-hit-trigger').style.display = 'none';
-    document.getElementById('btn-error').style.display = 'none'; // 他のボタンを隠す
+    document.getElementById('btn-error').style.display = 'none'; 
     document.getElementById('btn-run').style.display = 'none';
-    document.getElementById('btn-hit-simple').style.display = 'none'; // シンプルHitボタンも隠す
+    document.getElementById('btn-hit-simple').style.display = 'none'; 
+    document.getElementById('btn-deadball').style.display = 'none';
 }
 
 function hideHitOptions(){
     document.getElementById('hit-input-container').style.display = 'none';
+    // 隠したボタンを戻す
     document.getElementById('btn-hit-trigger').style.display = 'block';
-    document.getElementById('btn-error').style.display = 'block'; // 隠したボタンを戻す
+    document.getElementById('btn-error').style.display = 'block';
     document.getElementById('btn-run').style.display = 'block';
-    document.getElementById('btn-hit-simple').style.display = 'block'; // シンプルHitボタンを戻す
+    document.getElementById('btn-hit-simple').style.display = 'block'; 
+    document.getElementById('btn-deadball').style.display = 'block';
     state.tempHit = {}; // 状態をクリア
 }
 
@@ -658,10 +671,10 @@ function selectDirection(key){
 }
 
 /* -------------------------
-   ルール処理（Ball/Strike/Out/Foul/Error/Run）
+   ルール処理（Ball/Strike/Out/Foul/Error/Run/DeadBall/Hit）
    ------------------------- */
 
-// 新規追加: シンプルなHitボタンの処理
+// 復元: シンプルなHitボタンの処理
 function pressSimpleHit(){
   if(!guardAction()) return;
   hideHitOptions(); // 詳細パネルが開いていれば閉じる
@@ -690,6 +703,7 @@ function pressBall(){
 }
 
 function pressStrike(type = ''){ 
+  // 復元: Strike S/K 分割に対応
   if(!guardAction()) return;
   hideHitOptions();
   saveHistory();
@@ -715,7 +729,7 @@ function pressStrike(type = ''){
   renderAll();
 }
 
-// 修正: 確定ボタンで呼び出される最終記録関数 (HIの処理を削除)
+// 復元: 確定ボタンで呼び出される最終記録関数 
 function recordHitFinal(){
   const { outcome, type, direction } = state.tempHit;
   if (document.getElementById('record-hit-final-btn').disabled) return;
@@ -759,6 +773,7 @@ function recordHitFinal(){
   hideHitOptions();
   renderAll();
 }
+
 
 function pressError(){
   if(!guardAction()) return;
@@ -811,6 +826,20 @@ function pressFoul(){
   renderAll();
 }
 
+// 統合: Dead Ball (HBP)
+function pressDeadBall(){
+  if(!guardAction()) return;
+  hideHitOptions();
+  saveHistory();
+  incrementPitchCount();
+  // Dead Ball (HBP) -> B,S リセット
+  state.counts.ball = 0;
+  state.counts.strike = 0;
+  addLog('Dead Ball (HBP) => B,S reset');
+  renderAll();
+}
+
+
 /* イニング遷移 */
 function toggleHalfOrAdvanceInning(){
   if(state.half === '表'){
@@ -838,17 +867,19 @@ function swapPitcher(side){
 }
 
 /* -------------------------
-   UNDO / RESET / LOG
+   UNDO / RESET / LOG (復元)
    ------------------------- */
 function undo(){
   if(!guardAction()) return;
   hideHitOptions();
   if(history.length === 0){
+    setMessage('Undo 履歴がありません');
     return;
   }
   const prev = history.pop();
   state = deepCopy(prev);
   addLog('Undo operation');
+  setMessage('操作を1つ戻しました');
   renderAll();
 }
 function resetAll(){
@@ -857,6 +888,7 @@ function resetAll(){
   saveHistory();
   state = createInitialState();
   addLog('Full reset');
+  setMessage('リセットしました');
   renderAll();
 }
 async function copyLogToClipboard(){
@@ -865,7 +897,7 @@ async function copyLogToClipboard(){
   const text = formatLogText();
   try {
     await navigator.clipboard.writeText(text);
-    alert('ログ内容がクリップボードにコピーされました！');
+    setMessage('ログ内容がクリップボードにコピーされました！');
   } catch(e){
     alert('ログをクリップボードにコピーできませんでした。以下の内容を手動でコピーしてください:\n\n' + text);
   }
@@ -939,10 +971,12 @@ document.getElementById('inning-dec').addEventListener('click', ()=>{
 });
 
 document.getElementById('btn-run').addEventListener('click', pressRun);
-document.getElementById('btn-hit-simple').addEventListener('click', pressSimpleHit); // Simple Hitボタンのバインド
+document.getElementById('btn-hit-simple').addEventListener('click', pressSimpleHit); 
 document.getElementById('btn-error').addEventListener('click', pressError);
+document.getElementById('btn-deadball').addEventListener('click', pressDeadBall); // イベントバインド統合
 
 document.getElementById('btn-ball').addEventListener('click', pressBall);
+// 復元: S/K 分割のバインド
 document.getElementById('btn-strike-s').addEventListener('click', ()=> pressStrike('S'));
 document.getElementById('btn-strike-k').addEventListener('click', ()=> pressStrike('K'));
 
@@ -956,30 +990,26 @@ document.getElementById('btn-reset').addEventListener('click', resetAll);
 document.getElementById('btn-undo').addEventListener('click', undo);
 document.getElementById('btn-log').addEventListener('click', copyLogToClipboard); 
 
-// Hit入力パネルの制御
+// Hit入力パネルの制御 (復元)
 document.getElementById('btn-hit-trigger').addEventListener('click', showHitOptions);
 document.getElementById('hit-cancel-btn').addEventListener('click', hideHitOptions);
 document.getElementById('record-hit-final-btn').addEventListener('click', recordHitFinal);
 
-document.getElementById('hit-input-container').addEventListener('click', (e) => {
-    // ボタン自体のクリック処理はそれぞれのハンドラで行う
-});
-
-
 /* キーボードショートカット（補助） */
 document.addEventListener('keydown', (e)=>{
   if(e.key === 'b') document.getElementById('btn-ball').click();
-  if(e.key === 's') document.getElementById('btn-strike-s').click();
+  // S/K 分割に対応
+  if(e.key === 's') document.getElementById('btn-strike-s').click(); 
   if(e.key === 'k') document.getElementById('btn-strike-k').click();
   
   if(e.key === 'o') document.getElementById('btn-out').click();
   if(e.key === 'f') document.getElementById('btn-foul').click();
   if(e.key === 'r') document.getElementById('btn-run').click();
   if(e.key === 'e') document.getElementById('btn-error').click();
-  
   if(e.key === 'u') document.getElementById('btn-undo').click();
   
-  if(e.key === 'h') document.getElementById('btn-hit-simple').click(); // 'h'をシンプルHitに割り当て
+  if(e.key === 'h') document.getElementById('btn-hit-simple').click(); 
+  if(e.key === 'd') document.getElementById('btn-deadball').click(); // Dead Ball
   if(e.key === 'Escape') hideHitOptions();
 });
 
