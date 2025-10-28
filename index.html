@@ -2,394 +2,668 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-<title>審判カウンター（少年野球）</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>野球スコアキーパー</title>
 <style>
-  :root{
-    --bg: #ffffff;
-    --fg: #111111;
-    --accent: #0b5ed7;
-    --muted: #666;
-    --btn-radius: 12px;
-    --strike-color: #dff7df;
-    --ball-color: #fff7d9;
-    --reset-color: #ffcccc;
-  }
-  html,body{height:100%;margin:0;font-family: -apple-system, "Helvetica Neue", Arial; background:var(--bg); color:var(--fg);}
-  .wrap{display:flex;flex-direction:column;height:100%;padding:12px;box-sizing:border-box;}
-  .topbar{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;}
-  .status{display:flex;gap:8px;align-items:center;font-weight:600;}
-  .big{font-size:20px;}
-  .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-  .counts{width:100%;display:flex;flex-direction:column;gap:10px;align-items:center;}
-  .count-row{display:flex;gap:12px;width:100%;justify-content:center;align-items:center;}
-  .card{min-width:110px;min-height:84px;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,0.08);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;background:#f8f9fb;}
-  .card.clickable{cursor:pointer;transition:transform 0.05s, box-shadow 0.08s;}
-  .card.clickable:active{transform:scale(0.98);}
-  .label{font-size:14px;color:var(--muted);}
-  .num{font-size:34px;font-weight:700;}
-  .out-num{color: #ff0000;}
-  .out-label{color: #ff0000;}
-  .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding-bottom:6px;}
-  .btn{padding:14px;border-radius:12px;border:none;font-size:18px;font-weight:700;box-shadow:0 2px 4px rgba(0,0,0,0.08);}
-  .btn:active{transform:translateY(1px);}
-  .btn-primary{background:var(--accent);color:white;}
-  .btn-secondary{background:#e9eefc;color:var(--accent);font-weight:700;}
-  .btn-muted{background:#fff;border:1px solid #ddd;color:var(--fg);}
-  .btn-reset{background:var(--reset-color);color:#b00;}
-  .wide{grid-column:span 2;}
-  .small{font-size:14px;padding:10px;}
-  .footer{display:flex;justify-content:space-between;padding-top:8px;font-size:13px;color:var(--muted);}
-  .card.strike-active{background:var(--strike-color);border:1px solid #bfe6b9;}
-  .card.ball-active{background:var(--ball-color);border:1px solid #f1e4a8;}
-  .pitch-section, .score-section{display:flex;justify-content:flex-end;gap:10px;}
-  .pitch-input, .score-input{width:60px;padding:8px;border:1px solid #ddd;border-radius:8px;text-align:center;font-size:16px;}
-  .checkbox{margin: 10px 0;}
-  .log-output{background:#f8f9fa;padding:10px;border-radius:8px;margin-top:10px;max-height:200px;overflow:auto;color:#111111;display:none;}
-  @media (max-width:420px){
-    .card{min-width:90px;min-height:72px;}
-    .num{font-size:32px;}
-    .btn{padding:12px;font-size:18px;}
-  }
+:root {
+  --bg:#0f0f0f;
+  --panel:#1a1a1a;
+  --panel-2:#242424;
+  --text:#ffffff;
+  --muted:#bdbdbd;
+  --blue:#3b82f6;
+  --red:#ef4444;
+  --green:#22c55e;
+  --yellow:#f59e0b;
+  --danger:#ef4444;
+  --radius:12px;
+  --gap:10px;
+}
+*{box-sizing:border-box;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
+.wrap{max-width:980px;margin:10px auto;padding:12px;display:flex;flex-direction:column;gap:12px}
+.top{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.team{flex:1;background:var(--panel);border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;user-select:none}
+.team .label{font-weight:700;font-size:18px}
+.team .score{font-size:40px;margin-top:6px}
+.center-controls{display:flex;flex-direction:column;align-items:center;gap:8px}
+.halfbox{background:var(--panel-2);padding:10px;border-radius:10px;text-align:center;min-width:92px;cursor:pointer}
+.half-text{font-weight:800;font-size:18px;padding:2px 6px;border-radius:6px;color:white}
+.inning-num{font-size:18px;margin-top:6px}
+.inning-controls{display:flex;gap:6px;margin-top:6px}
+.small{background:transparent;border:1px solid #333;padding:6px 8px;border-radius:6px;cursor:pointer;color:var(--muted)}
+.scoreboard{display:flex;gap:8px;align-items:flex-start;overflow:auto;padding-bottom:6px}
+.innings{display:flex;gap:6px;align-items:flex-start}
+.inning{min-width:64px;background:var(--panel);padding:8px;border-radius:8px;text-align:center}
+.inning .title{font-weight:700;margin-bottom:6px}
+.inning .runs{font-size:20px}
+.right-stats{min-width:150px;background:var(--panel);padding:10px;border-radius:10px}
+.rhe-row{display:flex;justify-content:space-between;padding:6px 0}
+.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.btn{background:var(--panel);border-radius:10px;padding:12px 16px;min-width:110px;text-align:center;cursor:pointer;user-select:none;border:1px solid #222}
+.pcounts{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:0px}
+.pcount{flex:1;background:var(--panel);padding:10px;border-radius:10px;text-align:center;max-width:120px}
+.pcount .label{color:white;font-size:13px;font-weight:bold}
+.pcount .num{font-size:32px;font-weight:700;margin-top:6px}
+.swap-area{display:flex;flex-direction:column;gap:6px;align-items:center}
+.counter-box .label{color:white;font-size:14px;font-weight:bold}
+.counters{display:flex;gap:12px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.counter-box{background:var(--panel);padding:10px;border-radius:8px;min-width:88px;text-align:center}
+.lamp{width:14px;height:14px;border-radius:50%;border:2px solid var(--muted);margin:2px;display:inline-block}
+.controls-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+.counter-box .lamps{display:flex;gap:4px;justify-content:center;margin-top:6px} /* ランプ横並び */
+.note{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
+@media (max-width:600px){
+  .team .score{font-size:34px}
+  .btn{min-width:88px;padding:10px}
+  .inning{min-width:56px}
+}
+.btn, #btn-ball, #btn-strike, #btn-out  {
+  font-size:14px;
+  color: #fff !important;
+  background: #374151 !important;
+  border: 1px solid #64748b !important;
+}
+.lamp.ball-on  { background: #22c55e; border-color: #22c55e; }
+.lamp.strike-on{ background: #f59e0b; border-color: #f59e0b; }
+.lamp.out-on   { background: #ef4444; border-color: #ef4444; }
+.inning.current.omote {
+  background: #2563eb !important; /* 表(青系→お好みで調整可) */
+  color: #fff;
+  box-shadow: 0 0 0 2px #2563eb70;
+}
+.inning.current.ura {
+  background: #de2c3b !important;
+  color: #fff;
+  box-shadow: 0 0 0 2px #de2c3b80;
+}
+.inning.current {
+  font-weight: bold;
+  transform: scale(1.06);
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="status" aria-hidden="false">
-        <div class="big">INN: <span id="inning">1</span></div>
-        <div class="big"><span id="topbottom">▲</span></div>
-        <div class="big"><span class="out-label">OUT: </span><span id="out" class="out-num">0</span></div>
+<div class="wrap" id="app">
+  <div class="top">
+    <div class="team" id="panel-sen" data-side="sen">
+      <div class="label">先攻</div>
+      <div class="score" id="score-sen">0</div>
+    </div>
+
+    <div class="center-controls">
+      <div class="halfbox" id="halfbox" title="タップで表/裏切替">
+        <div id="half-display" class="half-text" style="background:var(--blue);">表</div>
+        <div class="inning-num" id="inning-display">1回</div>
+      </div>
+      <div class="inning-controls">
+        <button class="small" id="inning-dec">◀</button>
+        <button class="small" id="inning-inc">▶</button>
       </div>
     </div>
 
-    <div class="score-section">
-      <div id="team1Label" class="card clickable">
-        <div class="label">先攻</div>
-        <input type="number" id="score1" class="score-input" value="0" />
-      </div>
-      <div id="team2Label" class="card clickable">
-        <div class="label">後攻</div>
-        <input type="number" id="score2" class="score-input" value="0" />
-      </div>
+    <div class="team" id="panel-go" data-side="go">
+      <div class="label">後攻</div>
+      <div class="score" id="score-go">0</div>
     </div>
-
-    <div class="center">
-      <div class="counts">
-        <div class="count-row">
-          <div id="strikeCard" class="card clickable" role="button" aria-label="Strike を増やす">
-            <div class="label">STRIKE</div>
-            <div class="num" id="strike">0</div>
-          </div>
-          <div id="ballCard" class="card clickable" role="button" aria-label="Ball を増やす">
-            <div class="label">BALL</div>
-            <div class="num" id="ball">0</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="controls">
-      <button class="btn btn-primary" id="strikeBtn">STRIKE +</button>
-      <button class="btn btn-primary" id="ballBtn">BALL +</button>
-      <button class="btn btn-muted" id="outBtn">OUT +</button>
-
-      <button class="btn btn-secondary wide" id="pitchBtn">PITCH +</button>
-      <button class="btn btn-muted" id="sbReset">S/B RESET</button>
-      <button class="btn btn-muted" id="toggleTopBottom">▲/▼</button>
-
-      <button class="btn btn-muted" id="inningInc">INN +</button>
-      <button class="btn btn-reset" id="resetAll">ALL RESET</button>
-      <button class="btn btn-muted" id="showLog">ログ表示/非表示</button>
-      <button class="btn btn-muted" id="copyLog">ログコピー</button>
-    </div>
-
-    <div class="pitch-section">
-      <div>
-        <div class="label">Pitches 後攻</div>
-        <input type="number" id="pitch1" class="pitch-input" value="0" />
-      </div>
-      <div>
-        <div class="label">Pitches 先攻</div>
-        <input type="number" id="pitch2" class="pitch-input" value="0" />
-      </div>
-    </div>
-    
-    <div class="checkbox">
-      <label><input type="checkbox" id="autoProcess" checked> Ball4/Strike3/Out3 自動処理</label>
-    </div>
-
-    <div class="footer">
-      <div>保存: 自動（localStorage）</div>
-    </div>
-    
-    <div class="log-output" id="logOutput"></div>
   </div>
 
-  <script>
-  (function(){
-    const state = {
-      strike:0,
-      ball:0,
-      out:0,
-      inning:1,
-      topBottom: 'top',
-      pitch1:0,
-      pitch2:0,
-      score1:0,
-      score2:0,
-      log: []
-    };
+  <div class="scoreboard" aria-label="スコアボード領域">
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <strong>イニング得点</strong>
+        <span class="note">（ ▶ボタンのクリックで追加 ）</span>
+      </div>
+      <div class="innings" id="innings-area"></div>
+    </div>
 
-    const el = id => document.getElementById(id);
-    const r = {
-      strike: el('strike'),
-      ball: el('ball'),
-      out: el('out'),
-      inning: el('inning'),
-      topbottom: el('topbottom'),
-      pitch1: el('pitch1'),
-      pitch2: el('pitch2'),
-      score1: el('score1'),
-      score2: el('score2'),
-      team1Label: el('team1Label'),
-      team2Label: el('team2Label'),
-      strikeCard: el('strikeCard'),
-      ballCard: el('ballCard'),
-      logOutput: el('logOutput')
-    };
+  <div class="right-stats">
+    <div style="font-weight:800; margin-bottom:6px;">総合統計</div>
+    <table style="width:100%; border-spacing:0; color:#fff; font-size:16px;">
+      <tr>
+        <th style="text-align:right; font-weight:normal;"></th>
+        <th style="text-align:center; font-weight:bold;">先攻</th>
+        <th style="text-align:center; font-weight:bold;">後攻</th>
+      </tr>
+      <tr>
+        <td style="text-align:right; font-weight:bold;">R(得点)</td>
+        <td style="text-align:center;" id="sen-R">0</td>
+        <td style="text-align:center;" id="go-R">0</td>
+      </tr>
+      <tr>
+        <td style="text-align:right; font-weight:bold;">H(安打)</td>
+        <td style="text-align:center;" id="sen-H">0</td>
+        <td style="text-align:center;" id="go-H">0</td>
+      </tr>
+      <tr>
+        <td style="text-align:right; font-weight:bold;">E(失策)</td>
+        <td style="text-align:center;" id="sen-E">0</td>
+        <td style="text-align:center;" id="go-E">0</td>
+      </tr>
+    </table>
+  </div>
+  </div>
+  <div class="actions">
+    <div class="btn" id="btn-run">Run</div>
+    <div class="btn" id="btn-hit">Hit</div>
+    <div class="btn" id="btn-error">Error</div>
+  </div>
+  
+  <div class="pcounts">
+    <div class="pcount">
+      <div class="label">先攻P Count</div>
+      <div class="num" id="pcount-sen">0</div>
+    </div>
+    <div class="swap-area">
+      <button class="small" id="swap-sen">先攻P交代</button>
+      <button class="small" id="swap-go">後攻P交代</button>
+    </div>
+    <div class="pcount">
+      <div class="label">後攻P Count</div>
+      <div class="num" id="pcount-go">0</div>
+    </div>
+  </div>
 
-    const KEY = 'bb_ump_counter_v1';
+  <!-- BSO カウント -->
+  <div class="counters">
+    <div class="counter-box">
+      <div class="lamps">
+        <span class="lamp" id="ball1"></span>
+        <span class="lamp" id="ball2"></span>
+        <span class="lamp" id="ball3"></span>
+      </div>
+      <button class="btn" id="btn-ball">Ball +1</button>
+    </div>
 
-    function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
-    function load(){
-      const v = localStorage.getItem(KEY);
-      if(v){
-        try{ Object.assign(state, JSON.parse(v)); }catch(e){}
-      }
-    }
+    <div class="counter-box">
+      <div class="lamps">
+        <span class="lamp" id="strike1"></span>
+        <span class="lamp" id="strike2"></span>
+      </div>
+      <button class="btn" id="btn-strike">Strike +1</button>
+    </div>
 
-    function render(){
-      r.strike.textContent = state.strike;
-      r.ball.textContent = state.ball;
-      r.out.textContent = state.out;
-      r.inning.textContent = state.inning;
-      r.topbottom.textContent = state.topBottom === 'top' ? '▲' : '▼';
-      r.pitch1.value = state.pitch1;
-      r.pitch2.value = state.pitch2;
-      r.score1.value = state.score1;
-      r.score2.value = state.score2;
+    <div class="counter-box">
+      <div class="lamps">
+        <span class="lamp" id="out1"></span>
+        <span class="lamp" id="out2"></span>
+      </div>
+      <button class="btn" id="btn-out">Out +1</button>
+    </div>
+  </div>
 
-      if(state.strike > 0){
-        r.strikeCard.classList.add('strike-active');
-      } else {
-        r.strikeCard.classList.remove('strike-active');
-      }
-      if(state.ball > 0){
-        r.ballCard.classList.add('ball-active');
-      } else {
-        r.ballCard.classList.remove('ball-active');
-      }
+  <div class="actions">
+    <div class="btn" id="btn-foul">Foul</div>
+    <div class="btn" id="btn-reset">Reset</div>
+    <div class="btn" id="btn-undo">Undo</div>
+    <!-- <div class="btn" id="btn-log">Log Copy</div> -->
+  </div>
 
-      if(state.topBottom === 'bottom'){
-        document.body.style.backgroundColor = '#111111';
-        document.body.style.color = '#ffffff';
-      } else {
-        document.body.style.backgroundColor = 'var(--bg)';
-        document.body.style.color = 'var(--fg)';
-      }
+</div>
 
-      r.strikeCard.style.color = '#111111';
-      r.ballCard.style.color = '#111111';
+<div id="log-area" style="
+  margin-top:16px; background:#1a1a1a; border-radius:8px; 
+  padding:10px; min-height:80px; max-height:240px; overflow:auto; font-size:15px;">
+</div>
+<script>
+/* -------------------------
+   状態管理
+   ------------------------- */
+function createInitialState(){
+  return {
+    inning: 1,
+    half: '表', // '表' or '裏'
+    innings: {1: {sen:0, go:0}}, // 各イニングの得点のみ
+    total: {sen:0, go:0},
+    totals_RHE: {sen: {R:0,H:0,E:0}, go: {R:0,H:0,E:0}},
+    counts: {ball:0, strike:0, out:0},
+    pcount: {sen:0, go:0},
+    log: [] // ログエントリ配列
+  };
+}
+let state = createInitialState();
+let history = []; // undo用スタック（stateのdeepコピーを保存）
+const ACTION_LOCK_MS = 150; // 連打防止の短いロック
 
-      highlightScore();
-    }
+/* 小道具 */
+function deepCopy(obj){ return JSON.parse(JSON.stringify(obj)); }
+function saveHistory(){
+//  history.push(deepCopy(state));
+//  if(history.length > 300) history.shift();
+}
+function setMessage(msg, timeout=2500){
+  const el = document.getElementById('message');
+  el.textContent = msg;
+  if(timeout>0){
+    clearTimeout(el._t);
+    el._t = setTimeout(()=> el.textContent = '', timeout);
+  }
+}
 
-    function logAction(action) {
-      const context = `INN:${state.inning} ${state.topBottom === 'top' ? '▲' : '▼'}`;
-      state.log.push(`${context} - ${action}`);
-      save();
-    }
+/* 操作ロック（ボタンの多重押し防止） */
+let actionLocked = false;
+function lockAction(){
+  actionLocked = true;
+  setTimeout(()=> actionLocked = false, ACTION_LOCK_MS);
+}
+function guardAction(){
+  if(actionLocked){ return false; }
+  lockAction();
+  return true;
+}
 
-    function increasePitch(){
-      if(state.topBottom === 'top'){
-        state.pitch1++;
-      } else {
-        state.pitch2++;
-      }
-    }
-
-    function handleOutThree(){
-      if(state.out >= 3 && document.getElementById('autoProcess').checked){
-        state.out = 0;
-        if(state.topBottom === 'top'){
-          state.topBottom = 'bottom';
-        } else {
-          state.topBottom = 'top';
-          state.inning++;
-        }
-      }
-    }
-
-    function onScore1(){
-      state.score1++;
-      logAction("先攻 スコア");
-      save(); render();
-    }
-    
-    function onScore2(){
-      state.score2++;
-      logAction("後攻 スコア");
-      save(); render();
-    }
-
-    function onStrike(){
-        state.strike++;
-        increasePitch();
-        logAction("ストライク");
-        if(state.strike >= 3){
-            if(document.getElementById('autoProcess').checked){
-                state.out++;
-                logAction(`アウト - OUT: ${state.out}`); // 追加: アウトカウントをログに記録
-                handleOutThree();
-            }
-            state.strike = 0;
-            state.ball = 0;
-        }
-        save(); render();
-    }
-    
-    function onBall(){
-      state.ball++;
-      increasePitch();
-      logAction("ボール");
-      if(state.ball >= 4){
-        state.strike = 0;
-        state.ball = 0;
-      }
-      save(); render();
-    }
-
-    function onOut(){
-      state.out++;
-      logAction("アウト");
-      handleOutThree();
-      save(); render();
-    }
-
-    function onPitch(){
-      increasePitch();
-      logAction("投球");
-      save(); render();
-    }
-
-    function onSBReset(){
-      state.strike = 0;
-      state.ball = 0;
-      logAction("S/B リセット");
-      save(); render();
-    }
-
-    function onToggleTopBottom(){
-      state.topBottom = state.topBottom === 'top' ? 'bottom' : 'top';
-      logAction("イニング変更");
-      save(); render();
-    }
-
-    function onInningInc(){
-      state.inning++;
-      logAction("イニング");
-      save(); render();
-    }
-
-    function onResetAll(){
-      state.strike = 0;
-      state.ball = 0;
-      state.out = 0;
-      state.inning = 1;
-      state.topBottom = 'top';
-      state.pitch1 = 0;
-      state.pitch2 = 0;
-      state.score1 = 0;
-      state.score2 = 0;
-      state.log = [];
-      logAction("全リセット");
-      save(); render();
-    }
-
-    function toggleLog(){
-      if(r.logOutput.style.display === 'none' || r.logOutput.style.display === '') {
-        r.logOutput.innerHTML = state.log.join('<br>');
-        r.logOutput.style.display = 'block';
-      } else {
-        r.logOutput.style.display = 'none';
-      }
-    }
-
-    async function copyLog(){
-      try {
-        await navigator.clipboard.writeText(state.log.join('\n'));
-        alert("ログがクリップボードにコピーされました");
-      } catch (error) {
-        alert("コピーに失敗しました");
-      }
-    }
-
-    function highlightScore(){
-      if (state.topBottom === 'top') {
-          r.team1Label.style.backgroundColor = '#fff7d9';
-          r.team2Label.style.backgroundColor = '';
-      } else {
-          r.team1Label.style.backgroundColor = '';
-          r.team2Label.style.backgroundColor = '#fff7d9';
-      }
-    }
-
-    document.getElementById('strikeBtn').addEventListener('click', onStrike);
-    document.getElementById('ballBtn').addEventListener('click', onBall);
-    document.getElementById('outBtn').addEventListener('click', onOut);
-    document.getElementById('pitchBtn').addEventListener('click', onPitch);
-    document.getElementById('sbReset').addEventListener('click', onSBReset);
-    document.getElementById('toggleTopBottom').addEventListener('click', onToggleTopBottom);
-    document.getElementById('inningInc').addEventListener('click', onInningInc);
-    document.getElementById('resetAll').addEventListener('click', function(){
-      if(confirm('全てリセットしてよいですか？')) onResetAll();
+/* -------------------------
+   レンダリング
+   ------------------------- */
+function ensureInningExists(n){
+  if(!state.innings[n]) state.innings[n] = {sen:0, go:0};
+}
+function renderAll(){
+  renderHeader();
+  renderInnings();
+  renderTotals();
+  renderCounts();
+  updateBSOLamps();
+  renderLog();
+}
+function renderLog(){
+ /* const logArea = document.getElementById('log-area');
+  if(!logArea) return;
+  let html = '';
+  state.log.slice(-30).reverse().forEach(e => {
+    const d = new Date(e.time);
+    html += `<div style="margin:2px 0;">
+      <span style="color:#7cf; font-size:12px;">[${
+         String(d.getHours()).padStart(2,'0')
+      }:${
+         String(d.getMinutes()).padStart(2,'0')
+      }:${
+         String(d.getSeconds()).padStart(2,'0')
+      }]</span>
+      <b style="color:#ffe970;">${e.msg}</b>
+      <span style="color:#aaa;font-size:13px;">（${e.inning}回${e.half}）</span>
+    </div>`;
+  });
+  logArea.innerHTML = html;*/
+}
+function renderHeader(){
+  document.getElementById('score-sen').textContent = state.total.sen;
+  document.getElementById('score-go').textContent = state.total.go;
+  document.getElementById('inning-display').textContent = state.inning + '回';
+  const halfEl = document.getElementById('half-display');
+  halfEl.textContent = state.half;
+  // half の背景色（表: 青 / 裏: 赤）
+  if(state.half === '表'){
+    halfEl.style.background = "var(--blue)";
+    halfEl.style.color = "#fff";
+  } else {
+    halfEl.style.background = "var(--red)";
+    halfEl.style.color = "#fff";
+  }
+}
+function renderInnings(){
+  const container = document.getElementById('innings-area');
+  container.innerHTML = '';
+  const maxInning = Math.max(...Object.keys(state.innings).map(x=>parseInt(x)), state.inning);
+  for(let i=1; i<=maxInning; i++){
+     ensureInningExists(i);
+     const el = document.createElement('div');
+     let currentClass = '';
+     if(i === state.inning){
+       if(state.half === '表') currentClass = ' current omote';
+       else currentClass = ' current ura';
+     }
+     el.className = 'inning' + currentClass;
+     el.dataset.inning = i;
+     el.innerHTML = `<div class="title">${i}回</div>
+                    <div class="runs">
+                      <div style="font-size:18px;font-weight:700" id="inning-${i}-sen">${state.innings[i].sen}</div>
+                      <div style="height:8px"></div>
+                      <div style="font-size:12px;color:var(--muted)">￣</div>
+                      <div style="font-size:18px;font-weight:700" id="inning-${i}-go">${state.innings[i].go}</div>
+                    </div>`;
+    // クリックでそのイニング（現在の half に応じて）に得点を +1
+    el.addEventListener('click', ()=>{
+      if(!guardAction()) return;
+      saveHistory();
+      const side = (state.half === '表') ? 'sen' : 'go';
+      state.innings[i][side] += 1;
+      state.total[side] += 1;
+      // 総Rを更新（Rは総得点と同義）
+      state.totals_RHE.R = state.total.sen + state.total.go;
+      addLog(`Inning ${i} ${side} +1 (manual inning click)`);
+      renderAll();
     });
-    document.getElementById('showLog').addEventListener('click', toggleLog);
-    document.getElementById('copyLog').addEventListener('click', copyLog);
+    container.appendChild(el);
+  }
+}
+function renderTotals(){
+  document.getElementById('sen-R').textContent = state.totals_RHE.sen.R;
+  document.getElementById('sen-H').textContent = state.totals_RHE.sen.H;
+  document.getElementById('sen-E').textContent = state.totals_RHE.sen.E;
+  document.getElementById('go-R').textContent  = state.totals_RHE.go.R;
+  document.getElementById('go-H').textContent  = state.totals_RHE.go.H;
+  document.getElementById('go-E').textContent  = state.totals_RHE.go.E;
+  document.getElementById('pcount-sen').textContent = state.pcount.sen;
+  document.getElementById('pcount-go').textContent = state.pcount.go;
+}
+function renderCounts(){
+  // 何も処理しなくて良い（P Countや他の描画だけ残していい）
+  // Ball/Strike/Outカウント用ランプはここで一切触らない
+}
 
-    r.strikeCard.addEventListener('click', onStrike);
-    r.ballCard.addEventListener('click', onBall);
-    r.team1Label.addEventListener('click', onScore1);
-    r.team2Label.addEventListener('click', onScore2);
+/* -------------------------
+   ログ管理
+   ------------------------- */
+function addLog(msg){
+/*  const entry = {
+    time: new Date().toISOString(),
+    inning: state.inning,
+    half: state.half,
+    msg,
+    snapshot: deepCopy(state)
+  };
+  state.log.push(entry);*/
+}
+function formatLogText(){
+  // 各イニングの得点 + 時系列ログ（簡潔）
+  const maxInning = Math.max(...Object.keys(state.innings).map(x=>parseInt(x)));
+  let out = '=== イニング得点 ===\n';
+  for(let i=1;i<=maxInning;i++){
+    const s = state.innings[i].sen;
+    const g = state.innings[i].go;
+    out += `${i}回 先攻:${s} 後攻:${g}\n`;
+  }
+  out += '\n=== 総計 ===\n';
+  out += `R:${state.totals_RHE.R}  H:${state.totals_RHE.H}  E:${state.totals_RHE.E}\n`;
+  out += `先攻P: ${state.pcount.sen}投  後攻P: ${state.pcount.go}投\n\n`;
+  out += '=== 操作ログ（時系列） ===\n';
+  state.log.forEach((e, idx)=>{
+    out += `${idx+1}. [${e.time}] (${e.inning}回 ${e.half}) ${e.msg}\n`;
+  });
+  return out;
+}
 
-    r.pitch1.addEventListener('change', function(){
-      state.pitch1 = parseInt(r.pitch1.value) || 0;
-      save();
-    });
+/* -------------------------
+   投球数インクリメント（表なら後攻P増、裏なら先攻P増）
+   ------------------------- */
+function incrementPitchCount(){
+  if(state.half === '表'){
+    state.pcount.go += 1;
+  } else {
+    state.pcount.sen += 1;
+  }
+}
 
-    r.pitch2.addEventListener('change', function(){
-      state.pitch2 = parseInt(r.pitch2.value) || 0;
-      save();
-    });
+/* -------------------------
+   ルール処理（Ball/Strike/Out/Foul/Hit/Error/Run）
+   ------------------------- */
+function pressBall(){
+  if(!guardAction()) return;
+  saveHistory();
+  incrementPitchCount();
+  state.counts.ball += 1;
+  addLog('Ball +1');
+  // Ball=4 -> Walk: reset B,S
+  if(state.counts.ball >= 4){
+    state.counts.ball = 0;
+    state.counts.strike = 0;
+    addLog('Walk (Ball 4) => B,S reset');
+  }
+  renderAll();
+}
+function pressStrike(){
+  if(!guardAction()) return;
+  saveHistory();
+  incrementPitchCount();
+  state.counts.strike += 1;
+  addLog('Strike +1');
+  if(state.counts.strike >= 3){
+    // 三振：BS リセット、アウト +1
+    state.counts.ball = 0;
+    state.counts.strike = 0;
+    state.counts.out += 1;
+    addLog('Strikeout -> Out +1 (BS reset)');
+    // アウトが3ならイニング交代
+    if(state.counts.out >= 3){
+      state.counts.ball = 0; state.counts.strike = 0; state.counts.out = 0;
+      toggleHalfOrAdvanceInning();
+      addLog('3 Outs -> Inning change');
+    }
+  }
+  renderAll();
+}
+function pressOut(){
+  if(!guardAction()) return;
+  saveHistory();
+  // Out 操作は投球としてカウントする
+  incrementPitchCount();
+  state.counts.out += 1;
+  addLog('Out +1');
+  if(state.counts.out >= 3){
+    state.counts.ball = 0; state.counts.strike = 0; state.counts.out = 0;
+    toggleHalfOrAdvanceInning();
+    addLog('3 Outs -> Inning change');
+  }
+  renderAll();
+}
+function pressFoul(){
+  if(!guardAction()) return;
+  saveHistory();
+  incrementPitchCount();
+  if(state.counts.strike < 2){
+    state.counts.strike += 1;
+    addLog('Foul -> Strike +1');
+  } else {
+    addLog('Foul -> no strike increment (2 strikes already)');
+  }
+  renderAll();
+}
+function pressHit(){
+  if(!guardAction()) return;
+  saveHistory();
+  incrementPitchCount();
+  const side = (state.half === '表') ? 'sen' : 'go';
+  state.totals_RHE[side].H += 1; // 片方に加算する
+  state.counts.ball = 0; state.counts.strike = 0;
+  addLog('Hit -> H +1, BS reset');
+  renderAll();
+}
+function pressError(){
+  if(!guardAction()) return;
+  saveHistory();
+  incrementPitchCount();
+  const side = (state.half === '表') ? 'sen' : 'go';
+  state.totals_RHE[side].E += 1; // 片方に加算
+  state.counts.ball = 0; state.counts.strike = 0;
+  addLog('Error -> E +1, BS reset');
+  renderAll();
+}
+function pressRun(){
+  if(!guardAction()) return;
+  saveHistory();
+  const side = (state.half === '表') ? 'sen' : 'go';
+  state.innings[state.inning][side] += 1;
+  state.total[side] += 1;
+  state.totals_RHE[side].R = state.total[side]; // こちらも
+  addLog('Run -> ' + side + ' +1 (投球数は増やさない)');
+  renderAll();
+}
 
-    r.score1.addEventListener('change', function(){
-      state.score1 = parseInt(r.score1.value) || 0;
-      save();
-    });
+/* イニング遷移 */
+function toggleHalfOrAdvanceInning(){
+  if(state.half === '表'){
+    state.half = '裏';
+  } else {
+    state.half = '表';
+    state.inning += 1;
+    ensureInningExists(state.inning);
+  }
+  renderAll();
+}
 
-    r.score2.addEventListener('change', function(){
-      state.score2 = parseInt(r.score2.value) || 0;
-      save();
-    });
+/* -------------------------
+   投手交代（押した側の投手を交代 = カウントをログしてリセット）
+   例: swap-sen ボタン -> 先攻Pを交代（先攻Pの累計をログして0に）
+   ------------------------- */
+function swapPitcher(side){
+  if(!guardAction()) return;
+  saveHistory();
+  const totalBefore = (side === 'sen') ? state.pcount.sen : state.pcount.go;
+  addLog(`Pitcher change (${side}) - recorded ${totalBefore} pitches, reset to 0`);
+  // ログとしては snapshot で保存されるため、そのまま記録
+  if(side === 'sen') state.pcount.sen = 0;
+  else state.pcount.go = 0;
+  renderAll();
+}
 
-    load();
-    render();
-    highlightScore();
+/* -------------------------
+   UNDO / RESET / LOG
+   ------------------------- */
+function undo(){
+  if(!guardAction()) return;
+  if(history.length === 0){
+    setMessage('Undo 履歴がありません');
+    return;
+  }
+  const prev = history.pop();
+  state = deepCopy(prev);
+  setMessage('操作を1つ戻しました');
+  renderAll();
+}
+function resetAll(){
+  if(!guardAction()) return;
+  saveHistory();
+  state = createInitialState();
+  addLog('Full reset');
+  renderAll();
+  setMessage('リセットしました');
+}
+async function copyLogToClipboard(){
+  if(!guardAction()) return;
+  const text = formatLogText();
+  try {
+    await navigator.clipboard.writeText(text);
+    setMessage('ログをクリップボードにコピーしました');
+  } catch(e){
+    // フォールバック
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      setMessage('ログをクリップボードにコピーしました（フォールバック）');
+    } catch(err){
+      setMessage('クリップボードへのコピーに失敗しました');
+    }
+    document.body.removeChild(ta);
+  }
+}
+function updateBSOLamps(){
+  // Ball: 3つ
+  for(let i=1;i<=3;i++){
+    const el = document.getElementById('ball'+i);
+    if(el) el.classList.toggle('ball-on', (i <= state.counts.ball));
+  }
+  // Strike: 2つ
+  for(let i=1;i<=2;i++){
+    const el = document.getElementById('strike'+i);
+    if(el) el.classList.toggle('strike-on', (i <= state.counts.strike));
+  }
+  // Out: 2つ
+  for(let i=1;i<=2;i++){
+    const el = document.getElementById('out'+i);
+    if(el) el.classList.toggle('out-on', (i <= state.counts.out));
+  }
+}
+/* -------------------------
+   UI イベントバインド
+   ------------------------- */
+document.getElementById('panel-sen').addEventListener('click', ()=>{
+  if(!guardAction()) return;
+  saveHistory();
+  // 先攻パネルクリックで総得点 +1（現イニングの先攻にも反映）
+  state.innings[state.inning].sen += 1;
+  state.total.sen += 1;
+  state.totals_RHE.R = state.total.sen + state.total.go;
+  addLog('Panel 先攻 clicked -> +1');
+  renderAll();
+});
+document.getElementById('panel-go').addEventListener('click', ()=>{
+  if(!guardAction()) return;
+  saveHistory();
+  state.innings[state.inning].go += 1;
+  state.total.go += 1;
+  state.totals_RHE.R = state.total.sen + state.total.go;
+  addLog('Panel 後攻 clicked -> +1');
+  renderAll();
+});
 
-    document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'hidden') save(); });
+document.getElementById('halfbox').addEventListener('click', ()=>{
+  if(!guardAction()) return;
+  saveHistory();
+  state.half = (state.half === '表') ? '裏' : '表';
+  addLog('Half toggle -> ' + state.half);
+  renderAll();
+});
+document.getElementById('inning-inc').addEventListener('click', ()=>{
+  if(!guardAction()) return;
+  saveHistory();
+  state.inning += 1;
+  ensureInningExists(state.inning);
+  addLog('Inning ++ -> ' + state.inning);
+  renderAll();
+});
+document.getElementById('inning-dec').addEventListener('click', ()=>{
+  if(!guardAction()) return;
+  if(state.inning <= 1) return;
+  saveHistory();
+  state.inning -= 1;
+  addLog('Inning -- -> ' + state.inning);
+  renderAll();
+});
 
-  })();
-  </script>
+document.getElementById('btn-run').addEventListener('click', pressRun);
+document.getElementById('btn-hit').addEventListener('click', pressHit);
+document.getElementById('btn-error').addEventListener('click', pressError);
+
+document.getElementById('btn-ball').addEventListener('click', pressBall);
+document.getElementById('btn-strike').addEventListener('click', pressStrike);
+document.getElementById('btn-out').addEventListener('click', pressOut);
+document.getElementById('btn-foul').addEventListener('click', pressFoul);
+
+document.getElementById('swap-sen').addEventListener('click', ()=> swapPitcher('sen'));
+document.getElementById('swap-go').addEventListener('click', ()=> swapPitcher('go'));
+
+document.getElementById('btn-reset').addEventListener('click', resetAll);
+document.getElementById('btn-undo').addEventListener('click', undo);
+document.getElementById('btn-log').addEventListener('click', copyLogToClipboard);
+
+/* キーボードショートカット（補助） */
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'b') document.getElementById('btn-ball').click();
+  if(e.key === 's') document.getElementById('btn-strike').click();
+  if(e.key === 'o') document.getElementById('btn-out').click();
+  if(e.key === 'f') document.getElementById('btn-foul').click();
+  if(e.key === 'r') document.getElementById('btn-run').click();
+  if(e.key === 'h') document.getElementById('btn-hit').click();
+  if(e.key === 'e') document.getElementById('btn-error').click();
+  if(e.key === 'u') document.getElementById('btn-undo').click();
+});
+
+/* タッチ・クリックの視覚フィードバック（シンプル） */
+document.querySelectorAll('.btn, .team, .small, .halfbox').forEach(el=>{
+  el.addEventListener('touchstart', ()=> el.style.opacity = 0.7, {passive:true});
+  el.addEventListener('touchend', ()=> el.style.opacity = 1, {passive:true});
+  el.addEventListener('mousedown', ()=> el.style.opacity = 0.7);
+  el.addEventListener('mouseup', ()=> el.style.opacity = 1);
+  el.addEventListener('mouseleave', ()=> el.style.opacity = 1);
+});
+
+/* 初期レンダリング */
+renderAll();
+</script>
 </body>
 </html>
