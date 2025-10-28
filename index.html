@@ -64,6 +64,16 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
   background: #374151 !important;
   border: 1px solid #64748b !important;
 }
+/* ★ 修正部分: Undo/Resetボタンの配色を上書き ★ */
+#btn-undo { 
+  background: rgb(61,9,87) !important;
+  border-color: rgb(70, 20, 100) !important; /* 少し濃い縁取り */
+}
+#btn-reset { 
+  background: rgb(84,10,13) !important;
+  border-color: rgb(100, 20, 25) !important; /* 少し濃い縁取り */
+}
+/* ★ 修正部分 終了 ★ */
 .lamp.ball-on  { background: #22c55e; border-color: #22c55e; }
 .lamp.strike-on{ background: #f59e0b; border-color: #f59e0b; }
 .lamp.out-on   { background: #ef4444; border-color: #ef4444; }
@@ -119,26 +129,34 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
     </div>
 
   <div class="right-stats">
-    <div style="font-weight:800; margin-bottom:6px;">総合統計</div>
+    <div style="text-align:center;font-weight:800; margin-bottom:6px;">総合統計</div>
     <table style="width:100%; border-spacing:0; color:#fff; font-size:16px;">
       <tr>
         <th style="text-align:right; font-weight:normal;"></th>
-        <th style="text-align:center; font-weight:bold;">先攻</th>
-        <th style="text-align:center; font-weight:bold;">後攻</th>
+        <th style="text-align:center; font-weight:normal;">｜</th>
+        <th style="text-align:center; font-weight:normal;">先攻</th>
+        <th style="text-align:center; font-weight:normal;">｜</th>
+        <th style="text-align:center; font-weight:normal;">後攻</th>
       </tr>
       <tr>
         <td style="text-align:right; font-weight:bold;">R(得点)</td>
+        <th style="text-align:center; font-weight:normal;">｜</th>
         <td style="text-align:center;" id="sen-R">0</td>
+        <th style="text-align:center; font-weight:normal;">｜</th>
         <td style="text-align:center;" id="go-R">0</td>
       </tr>
       <tr>
         <td style="text-align:right; font-weight:bold;">H(安打)</td>
+        <th style="text-align:center; font-weight:normal;">｜</th>
         <td style="text-align:center;" id="sen-H">0</td>
+        <th style="text-align:center; font-weight:normal;">｜</th>
         <td style="text-align:center;" id="go-H">0</td>
       </tr>
       <tr>
         <td style="text-align:right; font-weight:bold;">E(失策)</td>
+        <th style="text-align:center; font-weight:normal;">｜</th>
         <td style="text-align:center;" id="sen-E">0</td>
+        <th style="text-align:center; font-weight:normal;">｜</th>
         <td style="text-align:center;" id="go-E">0</td>
       </tr>
     </table>
@@ -165,7 +183,6 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
     </div>
   </div>
 
-  <!-- BSO カウント -->
   <div class="counters">
     <div class="counter-box">
       <div class="lamps">
@@ -195,10 +212,9 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
 
   <div class="actions">
     <div class="btn" id="btn-foul">Foul</div>
-    <div class="btn" id="btn-reset">Reset</div>
     <div class="btn" id="btn-undo">Undo</div>
-    <!-- <div class="btn" id="btn-log">Log Copy</div> -->
-  </div>
+    <div class="btn" id="btn-reset">Reset</div>
+    </div>
 
 </div>
 
@@ -223,15 +239,25 @@ function createInitialState(){
   };
 }
 let state = createInitialState();
-let history = []; // undo用スタック（stateのdeepコピーを保存）
+let undoStack = []; // アクションを取り消すためのスタック
+const MAX_HISTORY = 50; // 履歴の最大数
 const ACTION_LOCK_MS = 150; // 連打防止の短いロック
 
 /* 小道具 */
-function deepCopy(obj){ return JSON.parse(JSON.stringify(obj)); }
-function saveHistory(){
-//  history.push(deepCopy(state));
-//  if(history.length > 300) history.shift();
-}
+// deepCopyの代替として、JSONを用いた簡易的なdeep copyを定義
+function structuredClone(obj){ return JSON.parse(JSON.stringify(obj)); } 
+
+/**
+ * 実行されたアクションを記録し、その逆操作（取り消し関数）をスタックにプッシュします。
+ * @param {Function} undoFn - このアクションを取り消すための関数
+ * @param {string} actionName - アクション名（デバッグ用。省略可）
+ */
+const pushAction = (undoFn, actionName = 'Action') => {
+  undoStack.push({ undoFn, actionName });
+  // 古い履歴を削除してメモリ使用量を制限
+  if(undoStack.length > MAX_HISTORY) undoStack.shift(); 
+};
+
 function setMessage(msg, timeout=2500){
   const el = document.getElementById('message');
   el.textContent = msg;
@@ -326,12 +352,22 @@ function renderInnings(){
     // クリックでそのイニング（現在の half に応じて）に得点を +1
     el.addEventListener('click', ()=>{
       if(!guardAction()) return;
-      saveHistory();
+      
       const side = (state.half === '表') ? 'sen' : 'go';
+      const preInningRuns = state.innings[i][side];
+      const preTotalRuns = state.total[side];
+      
       state.innings[i][side] += 1;
       state.total[side] += 1;
-      // 総Rを更新（Rは総得点と同義）
-      state.totals_RHE.R = state.total.sen + state.total.go;
+      state.totals_RHE[side].R = state.total[side]; // 総Rを更新 (Rは総得点と同義)
+
+      // Undo処理をプッシュ
+      pushAction(() => {
+          state.innings[i][side] = preInningRuns;
+          state.total[side] = preTotalRuns;
+          state.totals_RHE[side].R = preTotalRuns;
+      }, `Inning ${i} ${side} +1 (manual)`);
+
       addLog(`Inning ${i} ${side} +1 (manual inning click)`);
       renderAll();
     });
@@ -357,12 +393,12 @@ function renderCounts(){
    ログ管理
    ------------------------- */
 function addLog(msg){
-/*  const entry = {
+/* const entry = {
     time: new Date().toISOString(),
     inning: state.inning,
     half: state.half,
     msg,
-    snapshot: deepCopy(state)
+    snapshot: structuredClone(state)
   };
   state.log.push(entry);*/
 }
@@ -376,7 +412,7 @@ function formatLogText(){
     out += `${i}回 先攻:${s} 後攻:${g}\n`;
   }
   out += '\n=== 総計 ===\n';
-  out += `R:${state.totals_RHE.R}  H:${state.totals_RHE.H}  E:${state.totals_RHE.E}\n`;
+  out += `R:${state.totals_RHE.sen.R + state.totals_RHE.go.R}  H:先攻${state.totals_RHE.sen.H} 後攻${state.totals_RHE.go.H}  E:先攻${state.totals_RHE.sen.E} 後攻${state.totals_RHE.go.E}\n`;
   out += `先攻P: ${state.pcount.sen}投  後攻P: ${state.pcount.go}投\n\n`;
   out += '=== 操作ログ（時系列） ===\n';
   state.log.forEach((e, idx)=>{
@@ -401,98 +437,237 @@ function incrementPitchCount(){
    ------------------------- */
 function pressBall(){
   if(!guardAction()) return;
-  saveHistory();
+  
+  // Undoのために、変更前の状態を記録
+  const preState = structuredClone({ 
+      b: state.counts.ball, s: state.counts.strike, o: state.counts.out,
+      side: (state.half === '表') ? 'go' : 'sen', // 投球側のP
+      pCount: state.pcount[(state.half === '表') ? 'go' : 'sen']
+  });
+
   incrementPitchCount();
   state.counts.ball += 1;
   addLog('Ball +1');
-  // Ball=4 -> Walk: reset B,S
+
   if(state.counts.ball >= 4){
+    // Walk (Ball=4) -> 複雑なリセット
     state.counts.ball = 0;
     state.counts.strike = 0;
     addLog('Walk (Ball 4) => B,S reset');
+
+    pushAction(() => {
+        state.pcount[preState.side] = preState.pCount; // Pitch Countを戻す
+        state.counts.ball = preState.b; // B,Sを戻す
+        state.counts.strike = preState.s;
+    }, 'Walk');
+  } else {
+    // シンプルな +1 Ball
+    pushAction(() => {
+        state.pcount[preState.side] -= 1; // Pitch Countを戻す
+        state.counts.ball -= 1;
+    }, 'Ball +1');
   }
   renderAll();
 }
+
 function pressStrike(){
   if(!guardAction()) return;
-  saveHistory();
+  const preState = structuredClone({
+      b: state.counts.ball, s: state.counts.strike, o: state.counts.out,
+      side: (state.half === '表') ? 'go' : 'sen',
+      pCount: state.pcount[(state.half === '表') ? 'go' : 'sen'],
+      preInning: state.inning, preHalf: state.half, preO: state.counts.out
+  });
+
   incrementPitchCount();
   state.counts.strike += 1;
   addLog('Strike +1');
+
   if(state.counts.strike >= 3){
-    // 三振：BS リセット、アウト +1
+    // Strikeout (Strike=3) -> 複雑なリセット
     state.counts.ball = 0;
     state.counts.strike = 0;
     state.counts.out += 1;
     addLog('Strikeout -> Out +1 (BS reset)');
-    // アウトが3ならイニング交代
+
     if(state.counts.out >= 3){
+      // 3 Outs -> Inning change (最も複雑)
       state.counts.ball = 0; state.counts.strike = 0; state.counts.out = 0;
-      toggleHalfOrAdvanceInning();
+      toggleHalfOrAdvanceInning(true); // renderAllは自身で行う
       addLog('3 Outs -> Inning change');
+      
+      pushAction(() => {
+          // 状態全体を丸ごと戻す（イニング変更を戻すため）
+          state.inning = preState.preInning;
+          state.half = preState.preHalf;
+          state.pcount[preState.side] = preState.pCount;
+          state.counts.out = preState.preO;
+          state.counts.ball = preState.b;
+          state.counts.strike = preState.s;
+      }, 'Strikeout & Inning Change');
+      
+    } else {
+      // Simple Strikeout (Out < 3)
+      pushAction(() => {
+          state.pcount[preState.side] = preState.pCount;
+          state.counts.ball = preState.b;
+          state.counts.strike = preState.s;
+          state.counts.out -= 1;
+      }, 'Strikeout');
     }
+  } else {
+    // Simple +1 Strike
+    pushAction(() => {
+        state.pcount[preState.side] -= 1;
+        state.counts.strike -= 1;
+    }, 'Strike +1');
   }
   renderAll();
 }
+
 function pressOut(){
   if(!guardAction()) return;
-  saveHistory();
-  // Out 操作は投球としてカウントする
+  const preState = structuredClone({
+      side: (state.half === '表') ? 'go' : 'sen',
+      pCount: state.pcount[(state.half === '表') ? 'go' : 'sen'],
+      preInning: state.inning, preHalf: state.half, preO: state.counts.out,
+      // ★ 修正済み: BallとStrikeのカウントを記録
+      b: state.counts.ball, 
+      s: state.counts.strike
+  });
+  
   incrementPitchCount();
   state.counts.out += 1;
   addLog('Out +1');
+
   if(state.counts.out >= 3){
+    // 3 Outs -> Inning change
     state.counts.ball = 0; state.counts.strike = 0; state.counts.out = 0;
-    toggleHalfOrAdvanceInning();
+    toggleHalfOrAdvanceInning(true); // renderAllは自身で行う
     addLog('3 Outs -> Inning change');
+    
+    pushAction(() => {
+        // 状態全体を丸ごと戻す
+        state.inning = preState.preInning;
+        state.half = preState.preHalf;
+        state.pcount[preState.side] = preState.pCount;
+        // BSOをイニング交代前の値に戻す
+        state.counts.out = preState.preO;
+        state.counts.ball = preState.b;
+        state.counts.strike = preState.s;
+    }, 'Out & Inning Change');
+    
+  } else {
+    // Simple +1 Out
+    pushAction(() => {
+        state.pcount[preState.side] -= 1;
+        state.counts.out -= 1;
+    }, 'Out +1');
   }
+  
   renderAll();
 }
+
 function pressFoul(){
   if(!guardAction()) return;
-  saveHistory();
+  
+  const preStrike = state.counts.strike;
+  const preSide = (state.half === '表') ? 'go' : 'sen';
+  const prePCount = state.pcount[preSide];
+
   incrementPitchCount();
+
+  let actionName = 'Foul -> no strike increment (2 strikes already)';
   if(state.counts.strike < 2){
     state.counts.strike += 1;
-    addLog('Foul -> Strike +1');
-  } else {
-    addLog('Foul -> no strike increment (2 strikes already)');
+    actionName = 'Foul -> Strike +1';
   }
+  addLog(actionName);
+  
+  pushAction(() => {
+      state.pcount[preSide] = prePCount; // Pitch Countを戻す (Pitch Countは必ず戻す)
+      state.counts.strike = preStrike;
+  }, actionName);
+  
   renderAll();
 }
+
 function pressHit(){
   if(!guardAction()) return;
-  saveHistory();
-  incrementPitchCount();
+  
   const side = (state.half === '表') ? 'sen' : 'go';
+  const preH = state.totals_RHE[side].H;
+  const preB = state.counts.ball;
+  const preS = state.counts.strike;
+  const prePitchSide = (state.half === '表') ? 'go' : 'sen';
+  const prePCount = state.pcount[prePitchSide];
+
+  incrementPitchCount();
   state.totals_RHE[side].H += 1; // 片方に加算する
   state.counts.ball = 0; state.counts.strike = 0;
   addLog('Hit -> H +1, BS reset');
+  
+  pushAction(() => {
+      state.pcount[prePitchSide] -= 1;
+      state.totals_RHE[side].H = preH;
+      state.counts.ball = preB;
+      state.counts.strike = preS;
+  }, 'Hit');
+
   renderAll();
 }
+
 function pressError(){
   if(!guardAction()) return;
-  saveHistory();
-  incrementPitchCount();
+  
   const side = (state.half === '表') ? 'sen' : 'go';
+  const preE = state.totals_RHE[side].E;
+  const preB = state.counts.ball;
+  const preS = state.counts.strike;
+  const prePitchSide = (state.half === '表') ? 'go' : 'sen';
+  const prePCount = state.pcount[prePitchSide];
+  
+  incrementPitchCount();
   state.totals_RHE[side].E += 1; // 片方に加算
   state.counts.ball = 0; state.counts.strike = 0;
   addLog('Error -> E +1, BS reset');
+  
+  pushAction(() => {
+      state.pcount[prePitchSide] -= 1;
+      state.totals_RHE[side].E = preE;
+      state.counts.ball = preB;
+      state.counts.strike = preS;
+  }, 'Error');
+
   renderAll();
 }
+
 function pressRun(){
   if(!guardAction()) return;
-  saveHistory();
+  
   const side = (state.half === '表') ? 'sen' : 'go';
+  const preInningRuns = state.innings[state.inning][side];
+  const preTotalRuns = state.total[side];
+  
   state.innings[state.inning][side] += 1;
   state.total[side] += 1;
   state.totals_RHE[side].R = state.total[side]; // こちらも
   addLog('Run -> ' + side + ' +1 (投球数は増やさない)');
+  
+  pushAction(() => {
+      state.innings[state.inning][side] = preInningRuns;
+      state.total[side] = preTotalRuns;
+      state.totals_RHE[side].R = preTotalRuns;
+  }, 'Run +1');
+  
   renderAll();
 }
 
 /* イニング遷移 */
-function toggleHalfOrAdvanceInning(){
+function toggleHalfOrAdvanceInning(noRender = false){
+  const preHalf = state.half;
+  const preInning = state.inning;
+  
   if(state.half === '表'){
     state.half = '裏';
   } else {
@@ -500,21 +675,34 @@ function toggleHalfOrAdvanceInning(){
     state.inning += 1;
     ensureInningExists(state.inning);
   }
-  renderAll();
+  
+  if(!noRender){ // BSO関数以外から呼ばれた場合はUndoを記録し、描画する
+      pushAction(() => {
+          state.half = preHalf;
+          state.inning = preInning;
+      }, 'Half Toggle (manual)');
+      renderAll();
+  }
 }
 
 /* -------------------------
    投手交代（押した側の投手を交代 = カウントをログしてリセット）
-   例: swap-sen ボタン -> 先攻Pを交代（先攻Pの累計をログして0に）
    ------------------------- */
 function swapPitcher(side){
   if(!guardAction()) return;
-  saveHistory();
+  
   const totalBefore = (side === 'sen') ? state.pcount.sen : state.pcount.go;
   addLog(`Pitcher change (${side}) - recorded ${totalBefore} pitches, reset to 0`);
-  // ログとしては snapshot で保存されるため、そのまま記録
+  
+  // Undo処理をプッシュ: リセット前の投球数に戻す
+  pushAction(() => {
+      if(side === 'sen') state.pcount.sen = totalBefore;
+      else state.pcount.go = totalBefore;
+  }, `Pitcher Change (${side})`);
+  
   if(side === 'sen') state.pcount.sen = 0;
   else state.pcount.go = 0;
+  
   renderAll();
 }
 
@@ -523,29 +711,33 @@ function swapPitcher(side){
    ------------------------- */
 function undo(){
   if(!guardAction()) return;
-  if(history.length === 0){
-    setMessage('Undo 履歴がありません');
+  if(undoStack.length === 0){
+    // setMessage('Undo 履歴がありません'); // メッセージ機能は現在無効
     return;
   }
-  const prev = history.pop();
-  state = deepCopy(prev);
-  setMessage('操作を1つ戻しました');
+  
+  const lastAction = undoStack.pop();
+  lastAction.undoFn(); // 逆操作関数を実行
+  // setMessage('操作を1つ戻しました: ' + lastAction.actionName); // メッセージ機能は現在無効
+  
   renderAll();
 }
 function resetAll(){
   if(!guardAction()) return;
-  saveHistory();
+  // resetAllのUndoはサポートしない
+  
   state = createInitialState();
+  undoStack.length = 0; // Undoスタックもクリア
   addLog('Full reset');
   renderAll();
-  setMessage('リセットしました');
+  // setMessage('リセットしました'); // メッセージ機能は現在無効
 }
 async function copyLogToClipboard(){
   if(!guardAction()) return;
   const text = formatLogText();
   try {
     await navigator.clipboard.writeText(text);
-    setMessage('ログをクリップボードにコピーしました');
+    // setMessage('ログをクリップボードにコピーしました'); // メッセージ機能は現在無効
   } catch(e){
     // フォールバック
     const ta = document.createElement('textarea');
@@ -554,9 +746,9 @@ async function copyLogToClipboard(){
     ta.select();
     try {
       document.execCommand('copy');
-      setMessage('ログをクリップボードにコピーしました（フォールバック）');
+      // setMessage('ログをクリップボードにコピーしました（フォールバック）'); // メッセージ機能は現在無効
     } catch(err){
-      setMessage('クリップボードへのコピーに失敗しました');
+      // setMessage('クリップボードへのコピーに失敗しました'); // メッセージ機能は現在無効
     }
     document.body.removeChild(ta);
   }
@@ -583,45 +775,74 @@ function updateBSOLamps(){
    ------------------------- */
 document.getElementById('panel-sen').addEventListener('click', ()=>{
   if(!guardAction()) return;
-  saveHistory();
-  // 先攻パネルクリックで総得点 +1（現イニングの先攻にも反映）
+  
+  const side = 'sen';
+  const preInningRuns = state.innings[state.inning][side];
+  const preTotalRuns = state.total[side];
+  
   state.innings[state.inning].sen += 1;
   state.total.sen += 1;
-  state.totals_RHE.R = state.total.sen + state.total.go;
+  state.totals_RHE.sen.R = state.total.sen;
   addLog('Panel 先攻 clicked -> +1');
+  
+  pushAction(() => {
+      state.innings[state.inning][side] = preInningRuns;
+      state.total[side] = preTotalRuns;
+      state.totals_RHE[side].R = preTotalRuns;
+  }, 'Panel Score (Sen) +1');
   renderAll();
 });
 document.getElementById('panel-go').addEventListener('click', ()=>{
   if(!guardAction()) return;
-  saveHistory();
+  
+  const side = 'go';
+  const preInningRuns = state.innings[state.inning][side];
+  const preTotalRuns = state.total[side];
+
   state.innings[state.inning].go += 1;
   state.total.go += 1;
-  state.totals_RHE.R = state.total.sen + state.total.go;
+  state.totals_RHE.go.R = state.total.go;
   addLog('Panel 後攻 clicked -> +1');
+
+  pushAction(() => {
+      state.innings[state.inning][side] = preInningRuns;
+      state.total[side] = preTotalRuns;
+      state.totals_RHE[side].R = preTotalRuns;
+  }, 'Panel Score (Go) +1');
   renderAll();
 });
 
 document.getElementById('halfbox').addEventListener('click', ()=>{
   if(!guardAction()) return;
-  saveHistory();
-  state.half = (state.half === '表') ? '裏' : '表';
-  addLog('Half toggle -> ' + state.half);
-  renderAll();
+  
+  toggleHalfOrAdvanceInning();
 });
 document.getElementById('inning-inc').addEventListener('click', ()=>{
   if(!guardAction()) return;
-  saveHistory();
+  
+  const preInning = state.inning;
+
   state.inning += 1;
   ensureInningExists(state.inning);
   addLog('Inning ++ -> ' + state.inning);
+
+  pushAction(() => {
+      state.inning = preInning;
+  }, 'Inning +1');
   renderAll();
 });
 document.getElementById('inning-dec').addEventListener('click', ()=>{
   if(!guardAction()) return;
   if(state.inning <= 1) return;
-  saveHistory();
+  
+  const preInning = state.inning;
+
   state.inning -= 1;
   addLog('Inning -- -> ' + state.inning);
+
+  pushAction(() => {
+      state.inning = preInning;
+  }, 'Inning -1');
   renderAll();
 });
 
