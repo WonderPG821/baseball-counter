@@ -40,7 +40,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
 .right-stats{min-width:150px;background:var(--panel);padding:10px;border-radius:10px}
 .rhe-row{display:flex;justify-content:space-between;padding:6px 0}
 .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
-.btn{background:var(--panel);border-radius:10px;padding:8px 10px;min-width:50px;text-align:center;cursor:pointer;user-select:none;border:1px solid #222}
+.btn{background:var(--panel);border-radius:10px;padding:8px 10px;min-width:30px;text-align:center;cursor:pointer;user-select:none;border:1px solid #222}
 .pcounts{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:0px}
 .pcount{flex:1;background:var(--panel);padding:10px;border-radius:10px;text-align:center;max-width:120px}
 .pcount .label{color:white;font-size:13px;font-weight:bold}
@@ -56,9 +56,23 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
 .counter-box .lamps{display:flex;gap:4px;justify-content:center;margin-top:6px} /* ランプ横並び */
 .counter-box2 .lamps{display:flex;gap:4px;justify-content:center;margin-top:6px} /* ランプ横並び */
 .note{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
+
+/* 追加: 投手名入力欄のスタイル */
+.p-name-input {
+  width: 90%;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid #333;
+  background: #242424;
+  color: var(--text);
+  text-align: center;
+  font-size: 14px;
+  margin: 4px 0;
+}
+
 @media (max-width:600px){
   .team .score{font-size:34px}
-  .btn{min-width:88px;padding:10px}
+  .btn{min-width:30px;padding:10px}
   .inning{min-width:56px}
 }
 /* カウント/アクションボタンの基本スタイルを統一 */
@@ -189,18 +203,18 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
   <div class="scoreboard" aria-label="スコアボード領域">
     <div style="flex:1">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <strong>イニング得点<span class="note">（ ▶ボタンのクリックで追加 ）</span></strong>
+        <strong>イニング得点<span class="note">（ ▶ボタンで追加 ）</span></strong>
       </div>
       <div class="innings" id="innings-area"></div>
     </div>
 
   <div class="right-stats">
-    <div style="font-weight:800; margin-bottom:6px;">総合統計</div>
+    <div style="font-weight:800;text-align:center; color:#88f; margin-bottom:6px;">総合統計</div>
     <table style="width:100%; border-spacing:0; color:#fff; font-size:16px;">
       <tr>
         <th style="text-align:right; font-weight:normal;"></th>
-        <th style="text-align:center; font-weight:bold;">先攻</th>
-        <th style="text-align:center; font-weight:bold;">後攻</th>
+        <th style="text-align:center; font-weight:normal;">先攻</th>
+        <th style="text-align:center; font-weight:normal;">後攻</th>
       </tr>
       <tr>
         <td style="text-align:right; font-weight:bold;">R(得点)</td>
@@ -250,6 +264,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
   <div class="pcounts">
     <div class="pcount">
       <div class="label">先攻P Count</div>
+      <input type="text" id="pname-sen" class="p-name-input" value="投手1 " placeholder="投手名" onchange="logPitcherName('sen')" />
       <div class="num" id="pcount-sen">0</div>
     </div>
     <div class="swap-area">
@@ -258,8 +273,14 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
     </div>
     <div class="pcount">
       <div class="label">後攻P Count</div>
+      <input type="text" id="pname-go" class="p-name-input" value="投手1 " placeholder="投手名" onchange="logPitcherName('go')" />
       <div class="num" id="pcount-go">0</div>
     </div>
+  </div>
+
+  <div class="batter-area" style="background:var(--panel); padding:10px; border-radius:10px; text-align:center; margin-top:1px;">
+      <!-- <div class="label" style="font-weight:bold;">現在のバッター</div>  -->
+      <input type="text" id="batter-name" placeholder="バッター名" onchange="logBatterName()" style="width: 80%; max-width: 300px; margin-top: 1px; padding: 8px; border-radius: 6px; border: 1px solid #333; background: #242424; color: var(--text); text-align: center;" />
   </div>
 
   <div class="counters">
@@ -329,8 +350,14 @@ const DIRECTIONS = {
 
 
 /* -------------------------
-   状態管理 (Log/History機能も復元)
+   状態管理
    ------------------------- */
+// バッターの動的なデフォルト名を生成する関数
+function getDefaultBatterName(inning, half, batterNum){
+  const side = (half === '表') ? '表' : '裏';
+  return `${inning}回${side} ${batterNum}番バッター`;
+}
+
 function createInitialState(){
   return {
     inning: 1,
@@ -340,15 +367,23 @@ function createInitialState(){
     totals_RHE: {sen: {R:0,H:0,E:0}, go: {R:0,H:0,E:0}},
     counts: {ball:0, strike:0, out:0},
     pcount: {sen:0, go:0},
-    log: [], // ログエントリ配列 (復元)
-    tempHit: {} // 一時的なHit入力状態 (復元)
+    // --- 新しい状態プロパティ ---
+    pCountSen: 1, // 先攻P交代回数
+    pCountGo: 1,  // 後攻P交代回数
+    pNameSen: '投手1 ', // 現在の先攻P名 (自動生成/手動入力)
+    pNameGo: '投手1 ',  // 現在の後攻P名 (自動生成/手動入力)
+    batterNum: 1, // 現在の打席番号 (1から連番)
+    currentBatterName: getDefaultBatterName(1, '表', 1), // 現在のバッター名 (自動生成/手動入力)
+    // --- End 新しい状態プロパティ ---
+    log: [], // ログエントリ配列
+    tempHit: {} // 一時的なHit入力状態
   };
 }
 let state = createInitialState();
-let history = []; // undo用スタック（stateのdeepコピーを保存） (復元)
+let history = []; // undo用スタック
 const ACTION_LOCK_MS = 150; // 連打防止の短いロック
 
-/* 小道具 */
+/* 小道具 (略) */
 function deepCopy(obj){ return JSON.parse(JSON.stringify(obj)); }
 function saveHistory(){
   // tempHit は保存しない
@@ -396,10 +431,21 @@ function renderAll(){
   renderHeader();
   renderInnings();
   renderTotals();
-  renderCounts(); // 削除されていたが不要なのでそのまま
+  renderNames(); // 追加: 名前入力欄のレンダリング
+  renderCounts(); 
   updateBSOLamps();
   renderLog();
 }
+// 追加: 名前入力欄のレンダリング
+function renderNames(){
+    // 投手名
+    document.getElementById('pname-sen').value = state.pNameSen;
+    document.getElementById('pname-go').value = state.pNameGo;
+    
+    // バッター名
+    document.getElementById('batter-name').value = state.currentBatterName;
+}
+
 function renderLog(){
   const logArea = document.getElementById('log-area');
   if(!logArea || logArea.style.fontWeight === 'bold') return; // メッセージ表示中は中断
@@ -410,10 +456,14 @@ function renderLog(){
     const d = new Date(e.time);
     const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
 
+    // ログにP名とB名を追加
+    const sideP = (e.half === '表') ? e.pNameGo : e.pNameSen;
+    const sideB = (e.half === '表') ? '先攻' : '後攻';
+    
     html += `<div style="margin:2px 0;">
       <span style="color:#7cf; font-size:12px;">[${timeStr}]</span>
       <b style="color:#ffe970;">${e.msg}</b>
-      <span style="color:#aaa;font-size:13px;">（${e.inning}回${e.half}）</span>
+      <span style="color:#aaa;font-size:13px;">（${e.inning}回${e.half}, P:${sideP}, B:${e.batterName}）</span>
     </div>`;
   });
   logArea.innerHTML = html;
@@ -491,7 +541,11 @@ function addLog(msg){
     time: new Date().toISOString(),
     inning: state.inning,
     half: state.half,
-    msg
+    msg,
+    // 追加: ログに現在のP名とB名を追加
+    pNameSen: state.pNameSen,
+    pNameGo: state.pNameGo,
+    batterName: state.currentBatterName
   };
   state.log.push(entry);
 }
@@ -519,12 +573,17 @@ function formatLogText(){
   state.log.forEach((e, idx)=>{
     const d = new Date(e.time);
     const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
-    logSection += `${idx+1}. [${timeStr}] (${e.inning}回 ${e.half}) ${e.msg}\n`;
+    
+    // P名とB名を詳細に追加
+    const sideP = (e.half === '表') ? e.pNameGo : e.pNameSen;
+    logSection += `${idx+1}. [${timeStr}] (${e.inning}回 ${e.half}, P:${sideP}, B:${e.batterName}) ${e.msg}\n`;
   });
   
   // 4. Pitcher Countを操作ログの最後に追記
   logSection += `\n--- 投球数 ---\n`;
   logSection += `先攻P: ${state.pcount.sen}投  後攻P: ${state.pcount.go}投\n`;
+  logSection += `現在の先攻P名: ${state.pNameSen}\n`;
+  logSection += `現在の後攻P名: ${state.pNameGo}\n`;
 
   // 結合: 総計 -> イニング得点 -> 操作ログ（投球数付き）
   let out = totalSection + inningSection + logSection;
@@ -544,7 +603,60 @@ function incrementPitchCount(){
 }
 
 /* -------------------------
-   Hit入力パネル表示/非表示制御 (復元)
+   名前入力欄のログ/状態更新
+   ------------------------- */
+// 追加: 投手名手動入力のログと状態更新
+function logPitcherName(side){
+    const inputEl = document.getElementById(`pname-${side}`);
+    const newName = inputEl.value.trim();
+    
+    if (side === 'sen') {
+        if (newName !== state.pNameSen) {
+             addLog(`先攻P名手動更新: ${state.pNameSen} -> ${newName}`);
+        }
+        state.pNameSen = newName;
+    } else {
+        if (newName !== state.pNameGo) {
+             addLog(`後攻P名手動更新: ${state.pNameGo} -> ${newName}`);
+        }
+        state.pNameGo = newName;
+    }
+    // renderAll() は呼ばない（onchangeイベントで）
+}
+
+// 追加: バッター名手動入力のログと状態更新
+function logBatterName(){
+    const inputEl = document.getElementById('batter-name');
+    const newName = inputEl.value.trim();
+    
+    if (newName !== state.currentBatterName) {
+         addLog(`バッター名手動更新: ${state.currentBatterName} -> ${newName}`);
+    }
+    state.currentBatterName = newName;
+    // renderAll() は呼ばない（onchangeイベントで）
+}
+
+// 追加: バッター交代時のロジック
+function updateBatterNameDynamic(){
+    // Dynamic Nameを生成し、state.currentBatterName を上書き
+    state.currentBatterName = getDefaultBatterName(state.inning, state.half, state.batterNum);
+}
+
+// 追加: バッター交代処理（Hit/Walk/Out/Error/DeadBall時に呼ぶ）
+function incrementBatter(reason){
+    // バッター番号をインクリメント
+    state.batterNum += 1;
+    
+    // Dynamic Nameを更新
+    updateBatterNameDynamic(); 
+
+    // ログを追加
+    addLog(`バッター交代 (${reason}) - 次の打者: ${state.currentBatterName}`);
+}
+
+
+/* -------------------------
+   Hit入力パネル表示/非表示制御 (略)
    ------------------------- */
 function renderHitOptions(){
     const outcomeContainer = document.getElementById('outcome-options');
@@ -652,7 +764,7 @@ function hideHitOptions(){
 }
 
 /* -------------------------
-   選択肢のロジック
+   選択肢のロジック (略)
    ------------------------- */
 function selectHitOutcome(key){
     state.tempHit.outcome = key;
@@ -680,7 +792,7 @@ function selectDirection(key){
    ルール処理（Ball/Strike/Out/Foul/Error/Run/DeadBall/Hit）
    ------------------------- */
 
-// 復元: シンプルなHitボタンの処理
+// 修正: Hitでバッター交代を追加
 function pressSimpleHit(){
   if(!guardAction()) return;
   hideHitOptions(); // 詳細パネルが開いていれば閉じる
@@ -690,9 +802,11 @@ function pressSimpleHit(){
   state.totals_RHE[side].H += 1; // 安打を記録
   state.counts.ball = 0; state.counts.strike = 0; // BSカウントをリセット
   addLog('Hit (simple button) -> H +1, BS reset');
+  incrementBatter('Hit(Simple)'); // 追加: バッター交代
   renderAll();
 }
 
+// 修正: Ball 4でバッター交代を追加
 function pressBall(){
   if(!guardAction()) return;
   hideHitOptions();
@@ -704,10 +818,12 @@ function pressBall(){
     state.counts.ball = 0;
     state.counts.strike = 0;
     addLog('Walk (Ball 4) => B,S reset');
+    incrementBatter('Walk'); // 追加: バッター交代
   }
   renderAll();
 }
 
+// 修正: Strike 3でバッター交代を追加
 function pressStrike(type = ''){ 
   // 復元: Strike S/K 分割に対応
   if(!guardAction()) return;
@@ -726,16 +842,19 @@ function pressStrike(type = ''){
     state.counts.strike = 0;
     state.counts.out += 1;
     addLog(`Strikeout (${type}) -> Out +1 (BS reset)`);
+    
     if(state.counts.out >= 3){
       state.counts.ball = 0; state.counts.strike = 0; state.counts.out = 0;
       toggleHalfOrAdvanceInning();
       addLog('3 Outs -> Inning change');
+    } else {
+      incrementBatter(`Strikeout (${type})`); // 追加: 3アウト未満でバッター交代
     }
   }
   renderAll();
 }
 
-// 復元: 確定ボタンで呼び出される最終記録関数 
+// 修正: 確定ボタンで呼び出される最終記録関数 (Hitでバッター交代を追加)
 function recordHitFinal(){
   const { outcome, type, direction } = state.tempHit;
   if (document.getElementById('record-hit-final-btn').disabled) return;
@@ -775,12 +894,15 @@ function recordHitFinal(){
 
   addLog(logMsg);
   
+  incrementBatter(`Hit(${outcomeText})`); // 追加: バッター交代
+  
   // 記録後パネルを閉じる
   hideHitOptions();
   renderAll();
 }
 
 
+// 修正: Errorでバッター交代を追加
 function pressError(){
   if(!guardAction()) return;
   hideHitOptions();
@@ -790,8 +912,10 @@ function pressError(){
   state.totals_RHE[side].E += 1; // 片方に加算
   state.counts.ball = 0; state.counts.strike = 0;
   addLog('Error -> E +1, BS reset');
+  incrementBatter('Error'); // 追加: バッター交代
   renderAll();
 }
+// Runはバッターを交代させない (ランナーの進塁・得点のみ)
 function pressRun(){
   if(!guardAction()) return;
   hideHitOptions();
@@ -804,6 +928,7 @@ function pressRun(){
   renderAll();
 }
 
+// 修正: Outでバッター交代を追加
 function pressOut(){
   if(!guardAction()) return;
   hideHitOptions();
@@ -811,10 +936,14 @@ function pressOut(){
   incrementPitchCount();
   state.counts.out += 1;
   addLog('Out +1');
+  
   if(state.counts.out >= 3){
     state.counts.ball = 0; state.counts.strike = 0; state.counts.out = 0;
-    toggleHalfOrAdvanceInning();
+    toggleHalfOrAdvanceInning(); // 3アウトの場合はイニング交代処理に任せる
     addLog('3 Outs -> Inning change');
+  } else {
+    state.counts.ball = 0; state.counts.strike = 0; // BSOリセット
+    incrementBatter('Out'); // 追加: 3アウト未満でバッター交代
   }
   renderAll();
 }
@@ -832,7 +961,7 @@ function pressFoul(){
   renderAll();
 }
 
-// 統合: Dead Ball (HBP)
+// 修正: Dead Ball (HBP)でバッター交代を追加
 function pressDeadBall(){
   if(!guardAction()) return;
   hideHitOptions();
@@ -842,6 +971,7 @@ function pressDeadBall(){
   state.counts.ball = 0;
   state.counts.strike = 0;
   addLog('Dead Ball (HBP) => B,S reset');
+  incrementBatter('Dead Ball (HBP)'); // 追加: バッター交代
   renderAll();
 }
 
@@ -855,25 +985,45 @@ function toggleHalfOrAdvanceInning(){
     state.inning += 1;
     ensureInningExists(state.inning);
   }
+  
+  // 追加: イニング/半イニング交代時は、バッター番号をリセットして更新
+  state.batterNum = 1; 
+  updateBatterNameDynamic(); // 新しいイニングの1番バッター名に更新
+  
   renderAll();
 }
 
 /* -------------------------
    投手交代
    ------------------------- */
+// 修正: 交代カウントと名前の自動更新を追加
 function swapPitcher(side){
   if(!guardAction()) return;
   hideHitOptions();
   saveHistory();
-  const totalBefore = (side === 'sen') ? state.pcount.sen : state.pcount.go;
-  addLog(`Pitcher change (${side}) - recorded ${totalBefore} pitches, reset to 0`);
-  if(side === 'sen') state.pcount.sen = 0;
-  else state.pcount.go = 0;
+  
+  const totalBefore = state.pcount[side];
+  
+  if(side === 'sen') {
+    state.pCountSen += 1;
+    const newName = `投手${state.pCountSen} `;
+    addLog(`Pitcher change (先攻P) - 記録 ${totalBefore}球, ${state.pNameSen}から${newName}へ交代`);
+    state.pNameSen = newName;
+    state.pcount.sen = 0;
+  }
+  else {
+    state.pCountGo += 1;
+    const newName = `投手${state.pCountGo} `;
+    addLog(`Pitcher change (後攻P) - 記録 ${totalBefore}球, ${state.pNameGo}から${newName}へ交代`);
+    state.pNameGo = newName;
+    state.pcount.go = 0;
+  }
+  
   renderAll();
 }
 
 /* -------------------------
-   UNDO / RESET / LOG (復元)
+   UNDO / RESET / LOG (復元) (略)
    ------------------------- */
 function undo(){
   if(!guardAction()) return;
@@ -955,6 +1105,11 @@ document.getElementById('halfbox').addEventListener('click', ()=>{
   saveHistory();
   state.half = (state.half === '表') ? '裏' : '表';
   addLog('Half toggle -> ' + state.half);
+  
+  // 表/裏が切り替わるため、バッター番号をリセットして更新
+  state.batterNum = 1; 
+  updateBatterNameDynamic(); 
+  
   renderAll();
 });
 document.getElementById('inning-inc').addEventListener('click', ()=>{
@@ -964,6 +1119,10 @@ document.getElementById('inning-inc').addEventListener('click', ()=>{
   state.inning += 1;
   ensureInningExists(state.inning);
   addLog('Inning ++ -> ' + state.inning);
+  
+  // イニングが進んだため、バッター名を更新
+  updateBatterNameDynamic();
+  
   renderAll();
 });
 document.getElementById('inning-dec').addEventListener('click', ()=>{
@@ -973,16 +1132,19 @@ document.getElementById('inning-dec').addEventListener('click', ()=>{
   saveHistory();
   state.inning -= 1;
   addLog('Inning -- -> ' + state.inning);
+  
+  // イニングが戻ったため、バッター名を更新
+  updateBatterNameDynamic(); 
+  
   renderAll();
 });
 
 document.getElementById('btn-run').addEventListener('click', pressRun);
 document.getElementById('btn-hit-simple').addEventListener('click', pressSimpleHit); 
 document.getElementById('btn-error').addEventListener('click', pressError);
-document.getElementById('btn-deadball').addEventListener('click', pressDeadBall); // イベントバインド統合
+document.getElementById('btn-deadball').addEventListener('click', pressDeadBall); 
 
 document.getElementById('btn-ball').addEventListener('click', pressBall);
-// 復元: S/K 分割のバインド
 document.getElementById('btn-strike-s').addEventListener('click', ()=> pressStrike('S'));
 document.getElementById('btn-strike-k').addEventListener('click', ()=> pressStrike('K'));
 
@@ -1000,6 +1162,8 @@ document.getElementById('btn-log').addEventListener('click', copyLogToClipboard)
 document.getElementById('btn-hit-trigger').addEventListener('click', showHitOptions);
 document.getElementById('hit-cancel-btn').addEventListener('click', hideHitOptions);
 document.getElementById('record-hit-final-btn').addEventListener('click', recordHitFinal);
+
+// P名とB名の onchange は HTML 内で logPitcherName/logBatterName にバインド済み
 
 /* キーボードショートカット（補助） */
 document.addEventListener('keydown', (e)=>{
