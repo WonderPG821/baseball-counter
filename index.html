@@ -264,7 +264,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
   <div class="pcounts">
     <div class="pcount">
       <div class="label">先攻P Count</div>
-      <input type="text" id="pname-sen" class="p-name-input" value="投手1 " placeholder="投手名" onchange="logPitcherName('sen')" />
+      <input type="text" id="pname-sen" class="p-name-input" value="投手1 " placeholder="投手名" onblur="logPitcherName('sen')" />
       <div class="num" id="pcount-sen">0</div>
     </div>
     <div class="swap-area">
@@ -273,14 +273,13 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
     </div>
     <div class="pcount">
       <div class="label">後攻P Count</div>
-      <input type="text" id="pname-go" class="p-name-input" value="投手1 " placeholder="投手名" onchange="logPitcherName('go')" />
+      <input type="text" id="pname-go" class="p-name-input" value="投手1 " placeholder="投手名" onblur="logPitcherName('go')" />
       <div class="num" id="pcount-go">0</div>
     </div>
   </div>
 
   <div class="batter-area" style="background:var(--panel); padding:10px; border-radius:10px; text-align:center; margin-top:1px;">
-      <!-- <div class="label" style="font-weight:bold;">現在のバッター</div>  -->
-      <input type="text" id="batter-name" placeholder="バッター名" onchange="logBatterName()" style="width: 80%; max-width: 300px; margin-top: 1px; padding: 8px; border-radius: 6px; border: 1px solid #333; background: #242424; color: var(--text); text-align: center;" />
+      <input type="text" id="batter-name" placeholder="バッター名" onblur="logBatterName()" style="width: 80%; max-width: 300px; margin-top: 1px; padding: 8px; border-radius: 6px; border: 1px solid #333; background: #242424; color: var(--text); text-align: center;" />
   </div>
 
   <div class="counters">
