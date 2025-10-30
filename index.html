@@ -171,7 +171,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
 .inning.current {
   font-weight: bold;
   transform: scale(1.06);
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s;
+  transition: background 0.15s, color: 0.15s, box-shadow 0.15s, transform 0.15s;
 }
 </style>
 </head>
@@ -264,7 +264,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
   <div class="pcounts">
     <div class="pcount">
       <div class="label">先攻P Count</div>
-      <input type="text" id="pname-sen" class="p-name-input" value="投手1 " placeholder="投手名" onblur="logPitcherName('sen')" />
+      <input type="text" id="pname-sen" class="p-name-input" value="先攻 投手1" placeholder="投手名" onblur="logPitcherName('sen')" />
       <div class="num" id="pcount-sen">0</div>
     </div>
     <div class="swap-area">
@@ -273,7 +273,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
     </div>
     <div class="pcount">
       <div class="label">後攻P Count</div>
-      <input type="text" id="pname-go" class="p-name-input" value="投手1 " placeholder="投手名" onblur="logPitcherName('go')" />
+      <input type="text" id="pname-go" class="p-name-input" value="後攻 投手1" placeholder="投手名" onblur="logPitcherName('go')" />
       <div class="num" id="pcount-go">0</div>
     </div>
   </div>
@@ -358,6 +358,9 @@ function getDefaultBatterName(inning, half, batterNum){
 }
 
 function createInitialState(){
+  const initialSenP = '先攻 投手1';
+  const initialGoP = '後攻 投手1';
+
   return {
     inning: 1,
     half: '表', // '表' or '裏'
@@ -366,14 +369,23 @@ function createInitialState(){
     totals_RHE: {sen: {R:0,H:0,E:0}, go: {R:0,H:0,E:0}},
     counts: {ball:0, strike:0, out:0},
     pcount: {sen:0, go:0},
-    // --- 新しい状態プロパティ ---
     pCountSen: 1, // 先攻P交代回数
     pCountGo: 1,  // 後攻P交代回数
-    pNameSen: '投手1 ', // 現在の先攻P名 (自動生成/手動入力)
-    pNameGo: '投手1 ',  // 現在の後攻P名 (自動生成/手動入力)
+    pNameSen: initialSenP, 
+    pNameGo: initialGoP,  
     batterNum: 1, // 現在の打席番号 (1から連番)
     currentBatterName: getDefaultBatterName(1, '表', 1), // 現在のバッター名 (自動生成/手動入力)
-    // --- End 新しい状態プロパティ ---
+    // ✅ 修正: deadBallsを追加
+    pitcherStats: {
+        [initialSenP]: { 
+            totalPitches: 0, strikes: 0, balls: 0, hits: 0, 
+            walks: 0, strikeouts: 0, runs: 0, deadBalls: 0
+        },
+        [initialGoP]: { 
+            totalPitches: 0, strikes: 0, balls: 0, hits: 0, 
+            walks: 0, strikeouts: 0, runs: 0, deadBalls: 0
+        }
+    },
     log: [], // ログエントリ配列
     tempHit: {} // 一時的なHit入力状態
   };
@@ -385,19 +397,19 @@ const ACTION_LOCK_MS = 150; // 連打防止の短いロック
 /* 小道具 (略) */
 function deepCopy(obj){ return JSON.parse(JSON.stringify(obj)); }
 function saveHistory(){
-  // tempHit は保存しない
   const tempState = deepCopy(state);
   delete tempState.tempHit; 
   history.push(tempState); 
   if(history.length > 300) history.shift();
 }
 function setMessage(msg, timeout=2500){
-  // メッセージ表示機能は復元
-  const el = document.getElementById('log-area'); // log-areaを一時的に使用する簡略版
+  const el = document.getElementById('log-area'); 
   if(!el) return;
   el.style.border = '2px solid var(--blue)';
   el.style.fontWeight = 'bold';
-  el.textContent = 'Notification: ' + msg;
+  
+  el.textContent = 'Notification: ' + msg; 
+  
   if(timeout>0){
     clearTimeout(el._t);
     el._t = setTimeout(()=> {
@@ -421,7 +433,28 @@ function guardAction(){
 }
 
 /* -------------------------
-   レンダリング
+   統計更新ヘルパー関数
+   ------------------------- */
+function updatePitcherStat(statKey, value = 1){
+  const currentPitcherName = (state.half === '表') ? state.pNameGo : state.pNameSen;
+  const key = currentPitcherName.trim();
+  if (!key) return; 
+
+  if(!state.pitcherStats[key]){
+    // ✅ 修正: 新規投手にも deadBalls を初期化
+    state.pitcherStats[key] = { 
+        totalPitches: 0, strikes: 0, balls: 0, hits: 0, 
+        walks: 0, strikeouts: 0, runs: 0, deadBalls: 0 
+    };
+  }
+  
+  if (state.pitcherStats[key][statKey] !== undefined) {
+      state.pitcherStats[key][statKey] += value;
+  }
+}
+
+/* -------------------------
+   レンダリング (略)
    ------------------------- */
 function ensureInningExists(n){
   if(!state.innings[n]) state.innings[n] = {sen:0, go:0};
@@ -430,34 +463,26 @@ function renderAll(){
   renderHeader();
   renderInnings();
   renderTotals();
-  renderNames(); // 追加: 名前入力欄のレンダリング
+  renderNames(); 
   renderCounts(); 
   updateBSOLamps();
   renderLog();
 }
-// 追加: 名前入力欄のレンダリング
 function renderNames(){
-    // 投手名
     document.getElementById('pname-sen').value = state.pNameSen;
     document.getElementById('pname-go').value = state.pNameGo;
-    
-    // バッター名
     document.getElementById('batter-name').value = state.currentBatterName;
 }
 
 function renderLog(){
   const logArea = document.getElementById('log-area');
-  if(!logArea || logArea.style.fontWeight === 'bold') return; // メッセージ表示中は中断
+  if(!logArea || logArea.style.fontWeight === 'bold') return; 
 
   let html = '';
-  // 最新30件を表示
   state.log.slice(-30).reverse().forEach(e => {
     const d = new Date(e.time);
     const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
-
-    // ログにP名とB名を追加
     const sideP = (e.half === '表') ? e.pNameGo : e.pNameSen;
-    const sideB = (e.half === '表') ? '先攻' : '後攻';
     
     html += `<div style="margin:2px 0;">
       <span style="color:#7cf; font-size:12px;">[${timeStr}]</span>
@@ -473,7 +498,6 @@ function renderHeader(){
   document.getElementById('inning-display').textContent = state.inning + '回';
   const halfEl = document.getElementById('half-display');
   halfEl.textContent = state.half;
-  // half の背景色（表: 青 / 裏: 赤）
   if(state.half === '表'){
     halfEl.style.background = "var(--blue)";
     halfEl.style.color = "#fff";
@@ -503,15 +527,14 @@ function renderInnings(){
                       <div style="font-size:12px;color:var(--muted)">￣</div>
                       <div style="font-size:18px;font-weight:700" id="inning-${i}-go">${state.innings[i].go}</div>
                     </div>`;
-    // クリックでそのイニング（現在の half に応じて）に得点を +1
     el.addEventListener('click', ()=>{
       if(!guardAction()) return;
       saveHistory();
       const side = (state.half === '表') ? 'sen' : 'go';
       state.innings[i][side] += 1;
       state.total[side] += 1;
-      // 総Rを更新（Rは総得点と同義）
       state.totals_RHE[side].R = state.total[side];
+      updatePitcherStat('runs'); 
       addLog(`Inning ${i} ${side} +1 (manual inning click)`);
       renderAll();
     });
@@ -541,7 +564,6 @@ function addLog(msg){
     inning: state.inning,
     half: state.half,
     msg,
-    // 追加: ログに現在のP名とB名を追加
     pNameSen: state.pNameSen,
     pNameGo: state.pNameGo,
     batterName: state.currentBatterName
@@ -552,12 +574,10 @@ function addLog(msg){
 function formatLogText(){
   const maxInning = Math.max(...Object.keys(state.innings).map(x=>parseInt(x)));
   
-  // 1. === 総計 === (P Countなし)
   let totalSection = '=== 総計 ===\n';
   totalSection += `先攻 R:${state.totals_RHE.sen.R} H:${state.totals_RHE.sen.H} E:${state.totals_RHE.sen.E}\n`;
   totalSection += `後攻 R:${state.totals_RHE.go.R} H:${state.totals_RHE.go.H} E:${state.totals_RHE.go.E}\n\n`;
   
-  // 2. === イニング得点 ===
   let inningSection = '=== イニング得点 ===\n';
   for(let i=1;i<=maxInning;i++){
     ensureInningExists(i);
@@ -567,48 +587,66 @@ function formatLogText(){
   }
   inningSection += '\n';
 
-  // 3. === 操作ログ（時系列） ===
   let logSection = '=== 操作ログ（時系列） ===\n';
   state.log.forEach((e, idx)=>{
     const d = new Date(e.time);
     const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
-    
-    // P名とB名を詳細に追加
     const sideP = (e.half === '表') ? e.pNameGo : e.pNameSen;
     logSection += `${idx+1}. [${timeStr}] (${e.inning}回 ${e.half}, P:${sideP}, B:${e.batterName}) ${e.msg}\n`;
   });
   
-  // 4. Pitcher Countを操作ログの最後に追記
-  logSection += `\n--- 投球数 ---\n`;
+  logSection += `\n--- 現在の投球数 ---\n`;
   logSection += `先攻P: ${state.pcount.sen}投  後攻P: ${state.pcount.go}投\n`;
   logSection += `現在の先攻P名: ${state.pNameSen}\n`;
   logSection += `現在の後攻P名: ${state.pNameGo}\n`;
 
-  // 結合: 総計 -> イニング得点 -> 操作ログ（投球数付き）
-  let out = totalSection + inningSection + logSection;
-  
+  let statsSection = '\n=== 投手別詳細統計 ===\n';
+  Object.keys(state.pitcherStats).forEach(pName => {
+    const stats = state.pitcherStats[pName];
+    if (!stats) return; 
+    
+    const totalP = stats.totalPitches;
+    const strikeP = stats.strikes;
+    const ballP = stats.balls;
+    const hits = stats.hits;
+    const walks = stats.walks;
+    const strikeouts = stats.strikeouts;
+    // ✅ 修正: deadBallsを取得
+    const deadBalls = stats.deadBalls; 
+    const runs = stats.runs;
+    
+    const strikeRate = totalP > 0 ? ((strikeP / totalP) * 100).toFixed(1) + '%' : 'N/A';
+    
+    statsSection += `--- ${pName.trim()} ---\n`;
+    statsSection += ` 総投球数: ${totalP}投\n`;
+    statsSection += ` (ストライク/ボール: ${strikeP}/${ballP})\n`;
+    statsSection += ` ストライク成功率: ${strikeRate}\n`;
+    statsSection += ` 被安打数: ${hits}\n`;
+    // ✅ 修正: フォアボール数とデッドボール数を分離して表示
+    statsSection += ` フォアボール数(BB): ${walks}\n`; 
+    statsSection += ` デッドボール数(HBP): ${deadBalls}\n`; 
+    statsSection += ` 三振数: ${strikeouts}\n`;
+    statsSection += ` 失点: ${runs}\n`;
+  });
+
+  let out = totalSection + inningSection + logSection + statsSection;
   return out;
 }
 
-/* -------------------------
-   投球数インクリメント
-   ------------------------- */
-function incrementPitchCount(){
-  if(state.half === '表'){
-    state.pcount.go += 1;
-  } else {
-    state.pcount.sen += 1;
-  }
-}
 
 /* -------------------------
-   名前入力欄のログ/状態更新
+   名前入力欄のログ/状態更新 (略)
    ------------------------- */
-// 追加: 投手名手動入力のログと状態更新
 function logPitcherName(side){
     const inputEl = document.getElementById(`pname-${side}`);
     const newName = inputEl.value.trim();
-    
+    if (!newName) return; 
+
+    // ✅ 修正: 新規投手にも deadBalls を初期化
+    if(!state.pitcherStats[newName]){
+        state.pitcherStats[newName] = { totalPitches: 0, strikes: 0, balls: 0, hits: 0, walks: 0, strikeouts: 0, runs: 0, deadBalls: 0 };
+    }
+
     if (side === 'sen') {
         if (newName !== state.pNameSen) {
              addLog(`先攻P名手動更新: ${state.pNameSen} -> ${newName}`);
@@ -620,10 +658,8 @@ function logPitcherName(side){
         }
         state.pNameGo = newName;
     }
-    // renderAll() は呼ばない（onchangeイベントで）
 }
 
-// 追加: バッター名手動入力のログと状態更新
 function logBatterName(){
     const inputEl = document.getElementById('batter-name');
     const newName = inputEl.value.trim();
@@ -632,24 +668,15 @@ function logBatterName(){
          addLog(`バッター名手動更新: ${state.currentBatterName} -> ${newName}`);
     }
     state.currentBatterName = newName;
-    // renderAll() は呼ばない（onchangeイベントで）
 }
 
-// 追加: バッター交代時のロジック
 function updateBatterNameDynamic(){
-    // Dynamic Nameを生成し、state.currentBatterName を上書き
     state.currentBatterName = getDefaultBatterName(state.inning, state.half, state.batterNum);
 }
 
-// 追加: バッター交代処理（Hit/Walk/Out/Error/DeadBall時に呼ぶ）
 function incrementBatter(reason){
-    // バッター番号をインクリメント
     state.batterNum += 1;
-    
-    // Dynamic Nameを更新
     updateBatterNameDynamic(); 
-
-    // ログを追加
     addLog(`バッター交代 (${reason}) - 次の打者: ${state.currentBatterName}`);
 }
 
@@ -664,19 +691,16 @@ function renderHitOptions(){
     
     [outcomeContainer, typeContainer, directionContainer].forEach(c => c.innerHTML = '');
 
-    // 結果種別
     Object.keys(HIT_OUTCOMES).forEach(key => {
         const btn = createHitOptionButton(key, HIT_OUTCOMES[key], 'outcome');
         btn.onclick = () => selectHitOutcome(key);
         outcomeContainer.appendChild(btn);
     });
-    // 打球タイプ
     Object.keys(BATTED_BALL_TYPES).forEach(key => {
         const btn = createHitOptionButton(key, BATTED_BALL_TYPES[key], 'type');
         btn.onclick = () => selectBattedBallType(key);
         typeContainer.appendChild(btn);
     });
-    // 方向
     Object.keys(DIRECTIONS).forEach(key => {
         const btn = createHitOptionButton(key, DIRECTIONS[key], 'direction');
         btn.onclick = () => selectDirection(key);
@@ -689,9 +713,8 @@ function renderHitOptions(){
 function createHitOptionButton(key, text, category){
     const btn = document.createElement('div');
     btn.className = 'hit-option-btn';
-    // 括弧内の文字や行頭の数字・ドットを削除して表示 (例: 1.Single -> Single)
     btn.textContent = text.replace(/（.+?）/g, '').replace(/^[0-9]\./, ''); 
-    btn.title = text; // フルテキストをツールチップとして表示
+    btn.title = text; 
     btn.dataset.key = key;
     btn.dataset.category = category;
     return btn;
@@ -700,7 +723,6 @@ function createHitOptionButton(key, text, category){
 function updateHitOptionSelections(){
     const { outcome, type, direction } = state.tempHit;
 
-    // 選択状態の更新
     document.querySelectorAll('.hit-option-btn').forEach(btn => {
         btn.classList.remove('selected', 'required-missing');
         const key = btn.dataset.key;
@@ -713,37 +735,30 @@ function updateHitOptionSelections(){
         }
     });
     
-    // HR 選択時の打球タイプ非活性化
     const isTypeOptional = (outcome === 'HR');
     document.getElementById('type-options').querySelectorAll('.hit-option-btn').forEach(btn => {
         btn.style.opacity = isTypeOptional ? 0.4 : 1;
         btn.style.cursor = isTypeOptional ? 'not-allowed' : 'pointer';
     });
     
-    // 決定ボタンの活性化チェック
     checkHitInputCompletion();
 }
 
 function checkHitInputCompletion(){
     const finalBtn = document.getElementById('record-hit-final-btn');
     const { outcome, direction } = state.tempHit;
-
-    // 結果種別(HR, SI, DO, TR, IS, BS) と 方向 の両方が選択されていれば完了
     let isComplete = (outcome && direction);
-    
     finalBtn.disabled = !isComplete;
 }
 
 function showHitOptions(){
     if(!guardAction()) return;
     
-    // 初期状態をリセット
     state.tempHit = {};
     renderHitOptions();
     updateHitOptionSelections();
 
     document.getElementById('hit-input-container').style.display = 'block';
-    // 他のボタンを隠す (Hitシンプルボタンも含む)
     document.getElementById('btn-hit-trigger').style.display = 'none';
     document.getElementById('btn-error').style.display = 'none'; 
     document.getElementById('btn-run').style.display = 'none';
@@ -753,13 +768,12 @@ function showHitOptions(){
 
 function hideHitOptions(){
     document.getElementById('hit-input-container').style.display = 'none';
-    // 隠したボタンを戻す
     document.getElementById('btn-hit-trigger').style.display = 'block';
     document.getElementById('btn-error').style.display = 'block';
     document.getElementById('btn-run').style.display = 'block';
     document.getElementById('btn-hit-simple').style.display = 'block'; 
     document.getElementById('btn-deadball').style.display = 'block';
-    state.tempHit = {}; // 状態をクリア
+    state.tempHit = {}; 
 }
 
 /* -------------------------
@@ -767,21 +781,16 @@ function hideHitOptions(){
    ------------------------- */
 function selectHitOutcome(key){
     state.tempHit.outcome = key;
-    
-    // Home Run が選択された場合、打球タイプを自動的にクリア/スキップ
     if(key === 'HR'){
         state.tempHit.type = undefined;
     }
     updateHitOptionSelections();
 }
-
 function selectBattedBallType(key){
-    // HR選択時は無視
     if(state.tempHit.outcome === 'HR') return; 
     state.tempHit.type = key;
     updateHitOptionSelections();
 }
-
 function selectDirection(key){
     state.tempHit.direction = key;
     updateHitOptionSelections();
@@ -791,44 +800,53 @@ function selectDirection(key){
    ルール処理（Ball/Strike/Out/Foul/Error/Run/DeadBall/Hit）
    ------------------------- */
 
-// 修正: Hitでバッター交代を追加
 function pressSimpleHit(){
   if(!guardAction()) return;
-  hideHitOptions(); // 詳細パネルが開いていれば閉じる
+  hideHitOptions(); 
   saveHistory();
-  incrementPitchCount();
+  
   const side = (state.half === '表') ? 'sen' : 'go';
-  state.totals_RHE[side].H += 1; // 安打を記録
-  state.counts.ball = 0; state.counts.strike = 0; // BSカウントをリセット
+  state.pcount[(state.half === '表') ? 'go' : 'sen'] += 1; 
+  updatePitcherStat('totalPitches');
+  updatePitcherStat('hits');
+  
+  state.totals_RHE[side].H += 1; 
+  state.counts.ball = 0; state.counts.strike = 0; 
   addLog('Hit (simple button) -> H +1, BS reset');
-  incrementBatter('Hit(Simple)'); // 追加: バッター交代
+  incrementBatter('Hit(Simple)'); 
   renderAll();
 }
 
-// 修正: Ball 4でバッター交代を追加
 function pressBall(){
   if(!guardAction()) return;
   hideHitOptions();
   saveHistory();
-  incrementPitchCount();
+  
+  state.pcount[(state.half === '表') ? 'go' : 'sen'] += 1; 
+  updatePitcherStat('totalPitches'); 
+  updatePitcherStat('balls');        
+  
   state.counts.ball += 1;
   addLog('Ball +1');
   if(state.counts.ball >= 4){
     state.counts.ball = 0;
     state.counts.strike = 0;
+    updatePitcherStat('walks'); // 📝 Walk (四球)はwalksに加算
     addLog('Walk (Ball 4) => B,S reset');
-    incrementBatter('Walk'); // 追加: バッター交代
+    incrementBatter('Walk'); 
   }
   renderAll();
 }
 
-// 修正: Strike 3でバッター交代を追加
 function pressStrike(type = ''){ 
-  // 復元: Strike S/K 分割に対応
   if(!guardAction()) return;
   hideHitOptions();
   saveHistory();
-  incrementPitchCount();
+  
+  state.pcount[(state.half === '表') ? 'go' : 'sen'] += 1; 
+  updatePitcherStat('totalPitches'); 
+  updatePitcherStat('strikes');       
+  
   state.counts.strike += 1;
   
   const logMsg = (type === 'S') ? 'Strike +1 (S: Swinging)' : 
@@ -840,6 +858,7 @@ function pressStrike(type = ''){
     state.counts.ball = 0;
     state.counts.strike = 0;
     state.counts.out += 1;
+    updatePitcherStat('strikeouts'); 
     addLog(`Strikeout (${type}) -> Out +1 (BS reset)`);
     
     if(state.counts.out >= 3){
@@ -847,36 +866,34 @@ function pressStrike(type = ''){
       toggleHalfOrAdvanceInning();
       addLog('3 Outs -> Inning change');
     } else {
-      incrementBatter(`Strikeout (${type})`); // 追加: 3アウト未満でバッター交代
+      incrementBatter(`Strikeout (${type})`); 
     }
   }
   renderAll();
 }
 
-// 修正: 確定ボタンで呼び出される最終記録関数 (Hitでバッター交代を追加)
 function recordHitFinal(){
   const { outcome, type, direction } = state.tempHit;
   if (document.getElementById('record-hit-final-btn').disabled) return;
 
-  // Lockを解除してから保存・実行
   actionLocked = false;
   saveHistory();
-  incrementPitchCount();
+  
   const side = (state.half === '表') ? 'sen' : 'go';
+  state.pcount[(state.half === '表') ? 'go' : 'sen'] += 1;
+  updatePitcherStat('totalPitches');
+  updatePitcherStat('hits');
+  
   state.totals_RHE[side].H += 1;
   state.counts.ball = 0; state.counts.strike = 0;
 
-  // --- Logging ---
   const outcomeText = HIT_OUTCOMES[outcome].replace(/\(.+?\)/g, '').replace(/^[0-9]\./, '');
   let details = [];
   let logMsg;
   
-  // 打球タイプ (HR以外はタイプが記録される可能性がある)
   if (type && outcome !== 'HR') {
       details.push(BATTED_BALL_TYPES[type]);
   }
-  
-  // 方向 (必須)
   if (direction) {
       details.push(DIRECTIONS[direction]);
   }
@@ -884,37 +901,34 @@ function recordHitFinal(){
   const detailsStr = details.length > 0 ? ` (${details.join(', ')})` : '';
   
   if (outcome === 'HR') {
-      // HRの場合
       logMsg = `${outcomeText} -> ${DIRECTIONS[direction]} (HR, H +1, BS reset)`;
   } else {
-      // SI, DO, TR, IS, BS の場合
       logMsg = `${outcomeText}${detailsStr} (H +1, BS reset)`;
   }
 
   addLog(logMsg);
+  incrementBatter(`Hit(${outcomeText})`); 
   
-  incrementBatter(`Hit(${outcomeText})`); // 追加: バッター交代
-  
-  // 記録後パネルを閉じる
   hideHitOptions();
   renderAll();
 }
 
 
-// 修正: Errorでバッター交代を追加
 function pressError(){
   if(!guardAction()) return;
   hideHitOptions();
   saveHistory();
-  incrementPitchCount();
+  
   const side = (state.half === '表') ? 'sen' : 'go';
-  state.totals_RHE[side].E += 1; // 片方に加算
+  state.pcount[(state.half === '表') ? 'go' : 'sen'] += 1;
+  updatePitcherStat('totalPitches');
+  
+  state.totals_RHE[side].E += 1; 
   state.counts.ball = 0; state.counts.strike = 0;
   addLog('Error -> E +1, BS reset');
-  incrementBatter('Error'); // 追加: バッター交代
+  incrementBatter('Error'); 
   renderAll();
 }
-// Runはバッターを交代させない (ランナーの進塁・得点のみ)
 function pressRun(){
   if(!guardAction()) return;
   hideHitOptions();
@@ -922,27 +936,33 @@ function pressRun(){
   const side = (state.half === '表') ? 'sen' : 'go';
   state.innings[state.inning][side] += 1;
   state.total[side] += 1;
-  state.totals_RHE[side].R = state.total[side]; // こちらも
+  state.totals_RHE[side].R = state.total.sen; // 総得点を更新
+  state.totals_RHE.go.R = state.total.go;
+  
+  updatePitcherStat('runs'); 
+  
   addLog('Run -> ' + side + ' +1 (投球数は増やさない)');
   renderAll();
 }
 
-// 修正: Outでバッター交代を追加
 function pressOut(){
   if(!guardAction()) return;
   hideHitOptions();
   saveHistory();
-  incrementPitchCount();
+  
+  state.pcount[(state.half === '表') ? 'go' : 'sen'] += 1;
+  updatePitcherStat('totalPitches');
+  
   state.counts.out += 1;
   addLog('Out +1');
   
   if(state.counts.out >= 3){
     state.counts.ball = 0; state.counts.strike = 0; state.counts.out = 0;
-    toggleHalfOrAdvanceInning(); // 3アウトの場合はイニング交代処理に任せる
+    toggleHalfOrAdvanceInning(); 
     addLog('3 Outs -> Inning change');
   } else {
-    state.counts.ball = 0; state.counts.strike = 0; // BSOリセット
-    incrementBatter('Out'); // 追加: 3アウト未満でバッター交代
+    state.counts.ball = 0; state.counts.strike = 0; 
+    incrementBatter('Out'); 
   }
   renderAll();
 }
@@ -950,9 +970,13 @@ function pressFoul(){
   if(!guardAction()) return;
   hideHitOptions();
   saveHistory();
-  incrementPitchCount();
+  
+  state.pcount[(state.half === '表') ? 'go' : 'sen'] += 1;
+  updatePitcherStat('totalPitches');
+  
   if(state.counts.strike < 2){
     state.counts.strike += 1;
+    updatePitcherStat('strikes'); 
     addLog('Foul -> Strike +1');
   } else {
     addLog('Foul -> no strike increment (2 strikes already)');
@@ -960,22 +984,26 @@ function pressFoul(){
   renderAll();
 }
 
-// 修正: Dead Ball (HBP)でバッター交代を追加
+// ✅ 修正: deadBallsとしてカウント
 function pressDeadBall(){
   if(!guardAction()) return;
   hideHitOptions();
   saveHistory();
-  incrementPitchCount();
-  // Dead Ball (HBP) -> B,S リセット
+  
+  state.pcount[(state.half === '表') ? 'go' : 'sen'] += 1;
+  updatePitcherStat('totalPitches');
+  updatePitcherStat('deadBalls'); // 📝 deadBallsとしてカウント
+
+  
   state.counts.ball = 0;
   state.counts.strike = 0;
   addLog('Dead Ball (HBP) => B,S reset');
-  incrementBatter('Dead Ball (HBP)'); // 追加: バッター交代
+  incrementBatter('Dead Ball (HBP)'); 
   renderAll();
 }
 
 
-/* イニング遷移 */
+/* イニング遷移 (略) */
 function toggleHalfOrAdvanceInning(){
   if(state.half === '表'){
     state.half = '裏';
@@ -985,9 +1013,8 @@ function toggleHalfOrAdvanceInning(){
     ensureInningExists(state.inning);
   }
   
-  // 追加: イニング/半イニング交代時は、バッター番号をリセットして更新
   state.batterNum = 1; 
-  updateBatterNameDynamic(); // 新しいイニングの1番バッター名に更新
+  updateBatterNameDynamic(); 
   
   renderAll();
 }
@@ -995,7 +1022,6 @@ function toggleHalfOrAdvanceInning(){
 /* -------------------------
    投手交代
    ------------------------- */
-// 修正: 交代カウントと名前の自動更新を追加
 function swapPitcher(side){
   if(!guardAction()) return;
   hideHitOptions();
@@ -1005,17 +1031,25 @@ function swapPitcher(side){
   
   if(side === 'sen') {
     state.pCountSen += 1;
-    const newName = `投手${state.pCountSen} `;
+    const newName = `先攻 投手${state.pCountSen}`; 
     addLog(`Pitcher change (先攻P) - 記録 ${totalBefore}球, ${state.pNameSen}から${newName}へ交代`);
     state.pNameSen = newName;
     state.pcount.sen = 0;
+    // ✅ 修正: 新規投手にも deadBalls を初期化
+    if(!state.pitcherStats[newName.trim()]) {
+         state.pitcherStats[newName.trim()] = { totalPitches: 0, strikes: 0, balls: 0, hits: 0, walks: 0, strikeouts: 0, runs: 0, deadBalls: 0 };
+    }
   }
   else {
     state.pCountGo += 1;
-    const newName = `投手${state.pCountGo} `;
+    const newName = `後攻 投手${state.pCountGo}`; 
     addLog(`Pitcher change (後攻P) - 記録 ${totalBefore}球, ${state.pNameGo}から${newName}へ交代`);
     state.pNameGo = newName;
     state.pcount.go = 0;
+    // ✅ 修正: 新規投手にも deadBalls を初期化
+    if(!state.pitcherStats[newName.trim()]) {
+         state.pitcherStats[newName.trim()] = { totalPitches: 0, strikes: 0, balls: 0, hits: 0, walks: 0, strikeouts: 0, runs: 0, deadBalls: 0 };
+    }
   }
   
   renderAll();
@@ -1058,24 +1092,21 @@ async function copyLogToClipboard(){
   }
 }
 function updateBSOLamps(){
-  // Ball: 3つ
   for(let i=1;i<=3;i++){
     const el = document.getElementById('ball'+i);
     if(el) el.classList.toggle('ball-on', (i <= state.counts.ball));
   }
-  // Strike: 2つ
   for(let i=1;i<=2;i++){
     const el = document.getElementById('strike'+i);
     if(el) el.classList.toggle('strike-on', (i <= state.counts.strike));
   }
-  // Out: 2つ
   for(let i=1;i<=2;i++){
     const el = document.getElementById('out'+i);
     if(el) el.classList.toggle('out-on', (i <= state.counts.out));
   }
 }
 /* -------------------------
-   UI イベントバインド
+   UI イベントバインド (略)
    ------------------------- */
 document.getElementById('panel-sen').addEventListener('click', ()=>{
   if(!guardAction()) return;
@@ -1084,6 +1115,7 @@ document.getElementById('panel-sen').addEventListener('click', ()=>{
   state.innings[state.inning].sen += 1;
   state.total.sen += 1;
   state.totals_RHE.sen.R = state.total.sen;
+  updatePitcherStat('runs'); 
   addLog('Panel 先攻 clicked -> +1');
   renderAll();
 });
@@ -1094,6 +1126,7 @@ document.getElementById('panel-go').addEventListener('click', ()=>{
   state.innings[state.inning].go += 1;
   state.total.go += 1;
   state.totals_RHE.go.R = state.total.go;
+  updatePitcherStat('runs'); 
   addLog('Panel 後攻 clicked -> +1');
   renderAll();
 });
@@ -1105,7 +1138,6 @@ document.getElementById('halfbox').addEventListener('click', ()=>{
   state.half = (state.half === '表') ? '裏' : '表';
   addLog('Half toggle -> ' + state.half);
   
-  // 表/裏が切り替わるため、バッター番号をリセットして更新
   state.batterNum = 1; 
   updateBatterNameDynamic(); 
   
@@ -1119,7 +1151,6 @@ document.getElementById('inning-inc').addEventListener('click', ()=>{
   ensureInningExists(state.inning);
   addLog('Inning ++ -> ' + state.inning);
   
-  // イニングが進んだため、バッター名を更新
   updateBatterNameDynamic();
   
   renderAll();
@@ -1132,7 +1163,6 @@ document.getElementById('inning-dec').addEventListener('click', ()=>{
   state.inning -= 1;
   addLog('Inning -- -> ' + state.inning);
   
-  // イニングが戻ったため、バッター名を更新
   updateBatterNameDynamic(); 
   
   renderAll();
@@ -1157,42 +1187,19 @@ document.getElementById('btn-reset').addEventListener('click', resetAll);
 document.getElementById('btn-undo').addEventListener('click', undo);
 document.getElementById('btn-log').addEventListener('click', copyLogToClipboard); 
 
-// Hit入力パネルの制御 (復元)
 document.getElementById('btn-hit-trigger').addEventListener('click', showHitOptions);
 document.getElementById('hit-cancel-btn').addEventListener('click', hideHitOptions);
 document.getElementById('record-hit-final-btn').addEventListener('click', recordHitFinal);
 
-// P名とB名の onchange は HTML 内で logPitcherName/logBatterName にバインド済み
-
-/* キーボードショートカット（補助） 
-document.addEventListener('keydown', (e)=>{
-  if(e.key === 'b') document.getElementById('btn-ball').click();
-  // S/K 分割に対応
-  if(e.key === 's') document.getElementById('btn-strike-s').click(); 
-  if(e.key === 'k') document.getElementById('btn-strike-k').click();
-  
-  if(e.key === 'o') document.getElementById('btn-out').click();
-  if(e.key === 'f') document.getElementById('btn-foul').click();
-  if(e.key === 'r') document.getElementById('btn-run').click();
-  if(e.key === 'e') document.getElementById('btn-error').click();
-  if(e.key === 'u') document.getElementById('btn-undo').click();
-  
-  if(e.key === 'h') document.getElementById('btn-hit-simple').click(); 
-  if(e.key === 'd') document.getElementById('btn-deadball').click(); // Dead Ball
-  if(e.key === 'Escape') hideHitOptions();
-});
-*/
-  
 /* タッチ・クリックの視覚フィードバック（シンプル） */
 document.querySelectorAll('.btn, .team, .small, .halfbox').forEach(el=>{
   el.addEventListener('touchstart', ()=> el.style.opacity = 0.7, {passive:true});
   el.addEventListener('touchend', ()=> el.style.opacity = 1, {passive:true});
   el.addEventListener('mousedown', ()=> el.style.opacity = 0.7);
-  el.addEventListener('mouseup', ()=> el.style.opacity = 1);
+  el.addEventListener('mouseup', ()=> el.style.opacity = 1); 
   el.addEventListener('mouseleave', ()=> el.style.opacity = 1);
 });
 document.addEventListener('click', (e)=>{
-    // hit-option-btn のクリックフィードバック
     if(e.target.classList.contains('hit-option-btn')){
         e.target.style.opacity = 0.7;
         setTimeout(() => e.target.style.opacity = 1, 100);
@@ -1202,8 +1209,7 @@ document.addEventListener('click', (e)=>{
 
 /* 初期レンダリング */
 renderAll();
-renderHitOptions(); // ボタン生成は最初に一度行う
+renderHitOptions(); 
 </script>
 </body>
 </html>
-
