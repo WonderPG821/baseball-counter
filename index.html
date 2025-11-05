@@ -16,74 +16,100 @@
   --green:#22c55e;
   --yellow:#f59e0b;
   --danger:#ef4444;
-  --radius:12px;
-  --gap:10px;
+  --radius:10px; /* 12pxから10pxに少し変更 */
+  --gap:6px; /* 10pxから6pxに削減 */
 }
 *{box-sizing:border-box;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
-.wrap{max-width:980px;margin:10px auto;padding:12px;display:flex;flex-direction:column;gap:12px}
-.top{display:flex;gap:10px;align-items:center;justify-content:space-between}
-.team{flex:1;background:var(--panel);border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;user-select:none}
-.team .label{font-weight:700;font-size:18px}
-.team .score{font-size:40px;margin-top:6px}
-.center-controls{display:flex;flex-direction:column;align-items:center;gap:8px}
-.halfbox{background:var(--panel-2);padding:10px;border-radius:10px;text-align:center;min-width:92px;cursor:pointer}
-.half-text{font-weight:800;font-size:18px;padding:2px 6px;border-radius:6px;color:white}
-.inning-num{font-size:18px;margin-top:6px}
-.inning-controls{display:flex;gap:6px;margin-top:6px}
-.small{background:transparent;border:1px solid #333;padding:6px 8px;border-radius:6px;cursor:pointer;color:var(--muted)}
-.scoreboard{display:flex;gap:8px;align-items:flex-start;overflow:auto;padding-bottom:6px}
-.innings{display:flex;gap:6px;align-items:flex-start}
-.inning{min-width:64px;background:var(--panel);padding:8px;border-radius:8px;text-align:center}
-.inning .title{font-weight:700;margin-bottom:6px}
-.inning .runs{font-size:20px}
-.right-stats{min-width:150px;background:var(--panel);padding:10px;border-radius:10px}
-.rhe-row{display:flex;justify-content:space-between;padding:6px 0}
-.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
-.btn{background:var(--panel);border-radius:10px;padding:8px 10px;min-width:30px;text-align:center;cursor:pointer;user-select:none;border:1px solid #222}
-.pcounts{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:0px}
-.pcount{flex:1;background:var(--panel);padding:10px;border-radius:10px;text-align:center;max-width:120px}
-.pcount .label{color:white;font-size:13px;font-weight:bold}
-.pcount .num{font-size:32px;font-weight:700;margin-top:6px}
-.swap-area{display:flex;flex-direction:column;gap:6px;align-items:center}
-.counter-box .label{color:white;font-size:14px;font-weight:bold}
-.counter-box2 .label{color:white;font-size:14px;font-weight:bold}
-.counters{display:flex;gap:12px;justify-content:center;margin-top:8px;flex-wrap:wrap}
-.counter-box{background:var(--panel);padding:8px 10px;border-radius:8px;min-width:88px;text-align:center}
-.counter-box2{background:var(--panel);padding:8px 10px;border-radius:8px;min-width:170px;text-align:center}
-.lamp{width:14px;height:14px;border-radius:50%;border:2px solid var(--muted);margin:2px;display:inline-block}
-.controls-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px}
-.counter-box .lamps{display:flex;gap:4px;justify-content:center;margin-top:6px} /* ランプ横並び */
-.counter-box2 .lamps{display:flex;gap:4px;justify-content:center;margin-top:6px} /* ランプ横並び */
-.note{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
+/* --- 縦幅削減の主要な修正 --- */
+.wrap{max-width:980px;margin:5px auto;padding:8px;display:flex;flex-direction:column;gap:8px} 
+.top{display:flex;gap:6px;align-items:center;justify-content:space-between} 
+.team{flex:1;background:var(--panel);border-radius:var(--radius);padding:8px;text-align:center;cursor:pointer;user-select:none} 
+.team .label{font-weight:700;font-size:16px} 
+.team .score{font-size:36px;margin-top:4px} 
+.center-controls{display:flex;flex-direction:column;align-items:center;gap:4px} 
+.halfbox{background:var(--panel-2);padding:6px;border-radius:8px;text-align:center;min-width:80px;cursor:pointer} 
+.half-text{font-weight:800;font-size:16px;padding:2px 4px;border-radius:4px;color:white} 
+.inning-num{font-size:16px;margin-top:4px} 
+.inning-controls{display:flex;gap:4px;margin-top:4px} 
+.small{background:transparent;border:1px solid #333;padding:4px 6px;border-radius:4px;cursor:pointer;color:var(--muted); font-size:12px;} 
+.scoreboard{display:flex;gap:6px;align-items:flex-start;overflow:auto;padding-bottom:4px} 
+.innings{display:flex;gap:4px;align-items:flex-start} 
+.inning{min-width:56px;background:var(--panel);padding:6px;border-radius:6px;text-align:center} 
+.inning .title{font-weight:700;margin-bottom:4px; font-size:14px;} 
+.inning .runs{font-size:18px} 
+.inning .runs div:nth-child(2){height:4px !important;} 
+.right-stats{min-width:140px;background:var(--panel);padding:8px;border-radius:8px; font-size:14px;} 
+.rhe-row{display:flex;justify-content:space-between;padding:4px 0} 
+.actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:4px} 
+.btn{background:var(--panel);border-radius:8px;padding:6px 8px;min-width:30px;text-align:center;cursor:pointer;user-select:none;border:1px solid #222; font-size:13px;} 
+.pcounts{display:flex;gap:6px;align-items:center;justify-content:center;margin-top:0px} 
+.pcount{flex:1;background:var(--panel);padding:8px;border-radius:8px;text-align:center;max-width:120px} 
+.pcount .label{color:white;font-size:12px;font-weight:bold} 
+.pcount .num{font-size:28px;font-weight:700;margin-top:4px} 
+.swap-area{display:flex;flex-direction:column;gap:4px;align-items:center} 
+.counter-box .label{color:white;font-size:12px;font-weight:bold} 
+.counter-box2 .label{color:white;font-size:12px;font-weight:bold} 
+.counters{display:flex;gap:6px;justify-content:center;margin-top:6px;flex-wrap:wrap} 
+.counter-box{background:var(--panel);padding:6px 8px;border-radius:6px;min-width:80px;text-align:center} 
+.counter-box2{background:var(--panel);padding:6px 8px;border-radius:6px;min-width:160px;text-align:center} 
+.lamp{width:12px;height:12px;border-radius:50%;border:2px solid var(--muted);margin:1px;display:inline-block} 
+.controls-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:6px} 
+.counter-box .lamps{display:flex;gap:3px;justify-content:center;margin-top:4px} 
+.counter-box2 .lamps{display:flex;gap:3px;justify-content:center;margin-top:4px} 
+.note{font-size:11px;color:var(--muted);text-align:center;margin-top:4px} 
 
-/* 追加: 投手名/チーム名入力欄のスタイル */
+/* フォーム要素のパディング・マージン調整 */
 .p-name-input {
   width: 90%;
-  padding: 4px 6px;
+  padding: 2px 4px;
   border-radius: 4px;
   border: 1px solid #333;
   background: #242424;
   color: var(--text);
   text-align: center;
-  font-size: 14px;
-  margin: 4px 0;
+  font-size: 13px;
+  margin: 2px 0;
+}
+.runners-area {
+    padding: 8px !important; 
+    margin-top: 6px !important; 
+}
+.bases-container {
+    margin-bottom: 8px !important;
+}
+.bases-container > div:first-child {
+    margin-bottom: 4px !important;
 }
 
+.batter-area {
+    padding: 6px !important; 
+    margin-top: 4px !important; 
+}
+#batter-name {
+    padding: 6px !important;
+    font-size: 14px !important;
+}
+
+
 @media (max-width:600px){
-  .team .score{font-size:34px}
-  .btn{min-width:30px;padding:10px}
-  .inning{min-width:56px}
+  .team .score{font-size:30px} 
+  .btn{min-width:30px;padding:8px} 
+  .inning{min-width:48px} 
 }
 /* カウント/アクションボタンの基本スタイルを統一 */
 .btn, #btn-ball, #btn-strike-s, #btn-strike-k, #btn-out  {
-  font-size:14px;
+  font-size:13px; 
   color: #fff !important;
   background: #374151 !important;
   border: 1px solid #64748b !important;
 }
+/* カウントボタンのパディング調整 */
+#btn-ball, #btn-strike-s, #btn-strike-k, #btn-out {
+    padding:8px 10px !important; 
+}
 
-/* Undo/Resetボタンの配色 (前回の変更を復元) */
+/* Undo/Resetボタンの配色 (前回の変更を維持) */
 #btn-undo { 
   background: rgb(61,9,87) !important;
   border-color: rgb(70, 20, 100) !important;
@@ -93,74 +119,46 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
   border-color: rgb(100, 20, 25) !important;
 }
 
-/* Hit入力パネルのスタイル (前回の変更を復元) */
+/* Hit入力パネルのスタイル調整 */
 #hit-input-container {
     background: var(--panel-2);
-    padding: 12px;
+    padding: 8px !important; 
     border-radius: var(--radius);
-    margin-top: 10px;
+    margin-top: 6px !important; 
 }
 .hit-category-title {
     font-weight: 700;
-    font-size: 16px;
-    margin: 8px 0 6px 0;
+    font-size: 14px; 
+    margin: 6px 0 4px 0 !important; 
     color: var(--muted);
 }
 .hit-category-options {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 10px;
+    gap: 4px; 
+    margin-bottom: 6px !important; 
 }
 .hit-option-btn {
     flex-grow: 1;
     background: #374151;
     color: #fff;
-    border-radius: 8px;
-    padding: 8px 10px;
-    text-align: center;
-    cursor: pointer;
-    user-select: none;
-    border: 1px solid #64748b;
-    font-size: 13px;
-    min-width: 80px;
-    transition: background 0.1s, border-color 0.1s;
-}
-.hit-option-btn.selected {
-    background: var(--blue) !important;
-    border-color: #1d4ed8 !important;
-    font-weight: bold;
-}
-.hit-option-btn.required-missing {
-    background: #444 !important;
-    border-color: #333 !important;
+    border-radius: 6px; 
+    padding: 6px 8px; 
+    font-size: 12px; 
+    min-width: 70px; 
 }
 #record-hit-final-btn, #hit-cancel-btn {
-    min-width: 150px;
-    font-size: 16px;
-    font-weight: bold;
-    padding: 14px 16px;
-    transition: opacity 0.2s, background 0.2s;
-}
-#record-hit-final-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-#record-hit-final-btn {
-    background: var(--green) !important;
-    border-color: #16a34a !important;
-}
-#hit-cancel-btn {
-    background: #444 !important;
-    border-color: #555 !important;
+    min-width: 120px !important; 
+    font-size: 14px !important; 
+    padding: 10px 12px !important; 
 }
 
-/* ランプの色 */
+/* ランプの色 (変更なし) */
 .lamp.ball-on, .lamp.base-on  { background: #22c55e; border-color: #22c55e; }
 .lamp.strike-on{ background: #f59e0b; border-color: #f59e0b; }
 .lamp.out-on   { background: #ef4444; border-color: #ef4444; }
 .inning.current.omote {
-  background: #2563eb !important; /* 表(青系→お好みで調整可) */
+  background: #2563eb !important; 
   color: #fff;
   box-shadow: 0 0 0 2px #2563eb70;
 }
@@ -173,6 +171,18 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
   font-weight: bold;
   transform: scale(1.06);
   transition: background 0.15s, color: 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+/* ログエリアの調整 */
+#log-area {
+  margin-top: 10px !important;
+  min-height: 60px !important;
+  max-height: 180px !important;
+  font-size: 13px !important;
+  padding: 6px !important;
+}
+#log-area div {
+    margin: 1px 0 !important;
 }
 </style>
 </head>
