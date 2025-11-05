@@ -57,7 +57,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
 .counter-box2 .lamps{display:flex;gap:4px;justify-content:center;margin-top:6px} /* ランプ横並び */
 .note{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
 
-/* 追加: 投手名入力欄のスタイル */
+/* 追加: 投手名/チーム名入力欄のスタイル */
 .p-name-input {
   width: 90%;
   padding: 4px 6px;
@@ -155,7 +155,8 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
     border-color: #555 !important;
 }
 
-.lamp.ball-on  { background: #22c55e; border-color: #22c55e; }
+/* ランプの色 */
+.lamp.ball-on, .lamp.base-on  { background: #22c55e; border-color: #22c55e; }
 .lamp.strike-on{ background: #f59e0b; border-color: #f59e0b; }
 .lamp.out-on   { background: #ef4444; border-color: #ef4444; }
 .inning.current.omote {
@@ -179,7 +180,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
 <div class="wrap" id="app">
   <div class="top">
     <div class="team" id="panel-sen" data-side="sen">
-      <div class="label">先攻</div>
+      <input type="text" id="teamname-sen" class="p-name-input" value="先攻" placeholder="チーム名" onblur="logTeamName('sen')" /> 
       <div class="score" id="score-sen">0</div>
     </div>
 
@@ -195,7 +196,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
     </div>
 
     <div class="team" id="panel-go" data-side="go">
-      <div class="label">後攻</div>
+      <input type="text" id="teamname-go" class="p-name-input" value="後攻" placeholder="チーム名" onblur="logTeamName('go')" />
       <div class="score" id="score-go">0</div>
     </div>
   </div>
@@ -260,7 +261,30 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
         <button class="btn" id="hit-cancel-btn">キャンセル</button>
     </div>
   </div>
-  
+
+  <div class="runners-area" style="background:var(--panel); padding:10px; border-radius:10px; margin-top:10px;">
+    <div style="font-weight:700; text-align:center; color:var(--text); margin-bottom:8px;">ランナー状況 (タップで切替)</div>
+    <div class="bases-container" style="display:flex; justify-content:center; gap:20px; margin-bottom:12px;">
+      <div class="base-indicator" id="base-third" data-base="third" title="3塁ランナー (タップで切替)" style="cursor:pointer;">
+        <div class="base-label" style="font-size:12px; color:var(--muted); text-align:center;">3塁</div>
+        <span class="lamp base-lamp" id="lamp-third"></span>
+      </div>
+      <div class="base-indicator" id="base-second" data-base="second" title="2塁ランナー (タップで切替)" style="cursor:pointer;">
+        <div class="base-label" style="font-size:12px; color:var(--muted); text-align:center;">2塁</div>
+        <span class="lamp base-lamp" id="lamp-second"></span>
+      </div>
+      <div class="base-indicator" id="base-first" data-base="first" title="1塁ランナー (タップで切替)" style="cursor:pointer;">
+        <div class="base-label" style="font-size:12px; color:var(--muted); text-align:center;">1塁</div>
+        <span class="lamp base-lamp" id="lamp-first"></span>
+      </div>
+    </div>
+    
+    <div class="actions" style="margin-top: 5px; flex-wrap:nowrap;">
+      <div class="btn" id="btn-record-runners" style="flex:1;">記録</div>
+      <div class="btn" id="btn-stolen-base" style="flex:1;">盗塁</div>
+      <div class="btn" id="btn-runner-out" style="flex:1;">ランナーOut</div>
+    </div>
+  </div>
   <div class="pcounts">
     <div class="pcount">
       <div class="label">先攻P Count</div>
@@ -375,6 +399,14 @@ function createInitialState(){
     pNameGo: initialGoP,  
     batterNum: 1, // 現在の打席番号 (1から連番)
     currentBatterName: getDefaultBatterName(1, '表', 1), // 現在のバッター名 (自動生成/手動入力)
+    
+    // ✅ 新規追加: チーム名
+    teamNameSen: '先攻', 
+    teamNameGo: '後攻', 
+    
+    // ✅ 新規追加: ランナー情報
+    runners: {first: false, second: false, third: false}, // 1塁, 2塁, 3塁
+    
     // ✅ 修正: deadBallsを追加
     pitcherStats: {
         [initialSenP]: { 
@@ -454,7 +486,7 @@ function updatePitcherStat(statKey, value = 1){
 }
 
 /* -------------------------
-   レンダリング (略)
+   レンダリング
    ------------------------- */
 function ensureInningExists(n){
   if(!state.innings[n]) state.innings[n] = {sen:0, go:0};
@@ -466,11 +498,14 @@ function renderAll(){
   renderNames(); 
   renderCounts(); 
   updateBSOLamps();
+  renderRunners(); // ✅ 新規追加
   renderLog();
 }
 function renderNames(){
     document.getElementById('pname-sen').value = state.pNameSen;
     document.getElementById('pname-go').value = state.pNameGo;
+    document.getElementById('teamname-sen').value = state.teamNameSen; // ✅ チーム名
+    document.getElementById('teamname-go').value = state.teamNameGo; // ✅ チーム名
     document.getElementById('batter-name').value = state.currentBatterName;
 }
 
@@ -551,6 +586,16 @@ function renderTotals(){
   document.getElementById('pcount-sen').textContent = state.pcount.sen;
   document.getElementById('pcount-go').textContent = state.pcount.go;
 }
+
+// ✅ 新規追加: ランナー表示
+function renderRunners(){
+  const bases = ['first', 'second', 'third'];
+  bases.forEach(base => {
+    const lamp = document.getElementById(`lamp-${base}`);
+    if(lamp) lamp.classList.toggle('base-on', state.runners[base]);
+  });
+}
+
 function renderCounts(){
   // 何も処理しなくて良い
 }
@@ -575,8 +620,8 @@ function formatLogText(){
   const maxInning = Math.max(...Object.keys(state.innings).map(x=>parseInt(x)));
   
   let totalSection = '=== 総計 ===\n';
-  totalSection += `先攻 R:${state.totals_RHE.sen.R} H:${state.totals_RHE.sen.H} E:${state.totals_RHE.sen.E}\n`;
-  totalSection += `後攻 R:${state.totals_RHE.go.R} H:${state.totals_RHE.go.H} E:${state.totals_RHE.go.E}\n\n`;
+  totalSection += `先攻(${state.teamNameSen}) R:${state.totals_RHE.sen.R} H:${state.totals_RHE.sen.H} E:${state.totals_RHE.sen.E}\n`;
+  totalSection += `後攻(${state.teamNameGo}) R:${state.totals_RHE.go.R} H:${state.totals_RHE.go.H} E:${state.totals_RHE.go.E}\n\n`;
   
   let inningSection = '=== イニング得点 ===\n';
   for(let i=1;i<=maxInning;i++){
@@ -635,8 +680,27 @@ function formatLogText(){
 
 
 /* -------------------------
-   名前入力欄のログ/状態更新 (略)
+   名前入力欄のログ/状態更新
    ------------------------- */
+
+// ✅ 新規追加: チーム名入力
+function logTeamName(side){
+    const inputEl = document.getElementById(`teamname-${side}`);
+    const newName = inputEl.value.trim() || (side === 'sen' ? '先攻' : '後攻');
+    
+    if (side === 'sen') {
+        if (newName !== state.teamNameSen) {
+             addLog(`先攻チーム名更新: ${state.teamNameSen} -> ${newName}`);
+        }
+        state.teamNameSen = newName;
+    } else {
+        if (newName !== state.teamNameGo) {
+             addLog(`後攻チーム名更新: ${state.teamNameGo} -> ${newName}`);
+        }
+        state.teamNameGo = newName;
+    }
+}
+
 function logPitcherName(side){
     const inputEl = document.getElementById(`pname-${side}`);
     const newName = inputEl.value.trim();
@@ -764,6 +828,9 @@ function showHitOptions(){
     document.getElementById('btn-run').style.display = 'none';
     document.getElementById('btn-hit-simple').style.display = 'none'; 
     document.getElementById('btn-deadball').style.display = 'none';
+    
+    // ランナー操作パネルも非表示
+    document.querySelector('.runners-area').style.display = 'none';
 }
 
 function hideHitOptions(){
@@ -773,6 +840,10 @@ function hideHitOptions(){
     document.getElementById('btn-run').style.display = 'block';
     document.getElementById('btn-hit-simple').style.display = 'block'; 
     document.getElementById('btn-deadball').style.display = 'block';
+    
+    // ランナー操作パネルを再表示
+    document.querySelector('.runners-area').style.display = 'block';
+    
     state.tempHit = {}; 
 }
 
@@ -812,7 +883,7 @@ function pressSimpleHit(){
   
   state.totals_RHE[side].H += 1; 
   state.counts.ball = 0; state.counts.strike = 0; 
-  addLog('Hit (simple button) -> H +1, BS reset');
+  addLog('Hit (simple button) -> H +1, BS reset. ランナー状況は手動で更新してください。');
   incrementBatter('Hit(Simple)'); 
   renderAll();
 }
@@ -832,7 +903,7 @@ function pressBall(){
     state.counts.ball = 0;
     state.counts.strike = 0;
     updatePitcherStat('walks'); // 📝 Walk (四球)はwalksに加算
-    addLog('Walk (Ball 4) => B,S reset');
+    addLog('Walk (Ball 4) => B,S reset. ランナー状況は手動で更新してください。');
     incrementBatter('Walk'); 
   }
   renderAll();
@@ -901,9 +972,9 @@ function recordHitFinal(){
   const detailsStr = details.length > 0 ? ` (${details.join(', ')})` : '';
   
   if (outcome === 'HR') {
-      logMsg = `${outcomeText} -> ${DIRECTIONS[direction]} (HR, H +1, BS reset)`;
+      logMsg = `${outcomeText} -> ${DIRECTIONS[direction]} (HR, H +1, BS reset). ランナー状況は手動で更新してください。`;
   } else {
-      logMsg = `${outcomeText}${detailsStr} (H +1, BS reset)`;
+      logMsg = `${outcomeText}${detailsStr} (H +1, BS reset). ランナー状況は手動で更新してください。`;
   }
 
   addLog(logMsg);
@@ -925,7 +996,7 @@ function pressError(){
   
   state.totals_RHE[side].E += 1; 
   state.counts.ball = 0; state.counts.strike = 0;
-  addLog('Error -> E +1, BS reset');
+  addLog('Error -> E +1, BS reset. ランナー状況は手動で更新してください。');
   incrementBatter('Error'); 
   renderAll();
 }
@@ -997,8 +1068,91 @@ function pressDeadBall(){
   
   state.counts.ball = 0;
   state.counts.strike = 0;
-  addLog('Dead Ball (HBP) => B,S reset');
+  addLog('Dead Ball (HBP) => B,S reset. ランナー状況は手動で更新してください。');
   incrementBatter('Dead Ball (HBP)'); 
+  renderAll();
+}
+
+// ✅ 新規追加: ランナー関連機能
+function getRunnersText() {
+    let bases = [];
+    if (state.runners.first) bases.push('1塁');
+    if (state.runners.second) bases.push('2塁');
+    if (state.runners.third) bases.push('3塁');
+    return bases.length > 0 ? bases.join(', ') + 'にランナー' : 'ランナーなし';
+}
+
+function toggleRunner(base) {
+  if(!guardAction()) return;
+  saveHistory();
+  
+  state.runners[base] = !state.runners[base];
+  addLog(`ベース状況手動切替: ${base} -> ${state.runners[base] ? 'ON' : 'OFF'}. 現在の状況: ${getRunnersText()}`);
+  renderRunners();
+}
+
+function pressRecordRunners() {
+  if(!guardAction()) return;
+  hideHitOptions();
+  saveHistory();
+  
+  addLog(`ランナー状況記録: ${getRunnersText()}`);
+  renderAll();
+}
+
+function pressStolenBase() {
+  if(!guardAction()) return;
+  hideHitOptions();
+  saveHistory();
+  
+  // 盗塁ロジック (最も遠いベースの走者を1つ進める。3塁走者はRun)
+  let logMsg = '盗塁失敗 - ランナーなし';
+  
+  if (state.runners.third) {
+      state.runners.third = false;
+      pressRun(); 
+      logMsg = '盗塁成功(3塁走者ホームイン) -> Run +1, 3塁クリア';
+  } else if (state.runners.second) {
+      state.runners.second = false;
+      state.runners.third = true;
+      logMsg = '盗塁成功(2塁走者3塁へ)';
+  } else if (state.runners.first) {
+      state.runners.first = false;
+      state.runners.second = true;
+      logMsg = '盗塁成功(1塁走者2塁へ)';
+  } else {
+      setMessage(logMsg, 2000);
+      history.pop(); 
+      actionLocked = false;
+      return; 
+  }
+  
+  addLog(logMsg + `. 現在の状況: ${getRunnersText()}`);
+  renderAll();
+}
+
+function pressRunnerOut() {
+  if(!guardAction()) return;
+  hideHitOptions();
+  saveHistory();
+  
+  // ランナーOutロジック (最も遠いベースの走者をOutにする)
+  let logMsg = 'ランナーOut失敗 - ランナーなし';
+  
+  state.counts.out += 1;
+  addLog('Out +1');
+  
+  if(state.counts.out >= 3){
+    state.counts.ball = 0; state.counts.strike = 0; state.counts.out = 0;
+    toggleHalfOrAdvanceInning(); 
+    addLog('3 Outs -> Inning change');
+  } else {
+    state.counts.ball = 0; state.counts.strike = 0; 
+    incrementBatter('Out'); 
+  }
+  renderAll();
+    
+  addLog(logMsg + ` -> Out +1, ベースクリア. 現在の状況: ${getRunnersText()}`);
   renderAll();
 }
 
@@ -1015,6 +1169,9 @@ function toggleHalfOrAdvanceInning(){
   
   state.batterNum = 1; 
   updateBatterNameDynamic(); 
+  
+  // イニング/攻守交代でランナーをクリア
+  state.runners = {first: false, second: false, third: false};
   
   renderAll();
 }
@@ -1106,9 +1263,12 @@ function updateBSOLamps(){
   }
 }
 /* -------------------------
-   UI イベントバインド (略)
+   UI イベントバインド 
    ------------------------- */
-document.getElementById('panel-sen').addEventListener('click', ()=>{
+document.getElementById('panel-sen').addEventListener('click', (e)=>{
+  // チーム名入力欄のクリックは無視
+  if (e.target.tagName.toLowerCase() === 'input') return;
+  
   if(!guardAction()) return;
   hideHitOptions();
   saveHistory();
@@ -1116,10 +1276,13 @@ document.getElementById('panel-sen').addEventListener('click', ()=>{
   state.total.sen += 1;
   state.totals_RHE.sen.R = state.total.sen;
   updatePitcherStat('runs'); 
-  addLog('Panel 先攻 clicked -> +1');
+  addLog(`Panel ${state.teamNameSen} clicked -> +1 Run`);
   renderAll();
 });
-document.getElementById('panel-go').addEventListener('click', ()=>{
+document.getElementById('panel-go').addEventListener('click', (e)=>{
+  // チーム名入力欄のクリックは無視
+  if (e.target.tagName.toLowerCase() === 'input') return;
+
   if(!guardAction()) return;
   hideHitOptions();
   saveHistory();
@@ -1127,7 +1290,7 @@ document.getElementById('panel-go').addEventListener('click', ()=>{
   state.total.go += 1;
   state.totals_RHE.go.R = state.total.go;
   updatePitcherStat('runs'); 
-  addLog('Panel 後攻 clicked -> +1');
+  addLog(`Panel ${state.teamNameGo} clicked -> +1 Run`);
   renderAll();
 });
 
@@ -1140,6 +1303,7 @@ document.getElementById('halfbox').addEventListener('click', ()=>{
   
   state.batterNum = 1; 
   updateBatterNameDynamic(); 
+  state.runners = {first: false, second: false, third: false}; // 攻守交代でランナークリア
   
   renderAll();
 });
@@ -1191,8 +1355,17 @@ document.getElementById('btn-hit-trigger').addEventListener('click', showHitOpti
 document.getElementById('hit-cancel-btn').addEventListener('click', hideHitOptions);
 document.getElementById('record-hit-final-btn').addEventListener('click', recordHitFinal);
 
+// ✅ 新規追加: ランナー操作イベント
+document.getElementById('base-first').addEventListener('click', () => toggleRunner('first'));
+document.getElementById('base-second').addEventListener('click', () => toggleRunner('second'));
+document.getElementById('base-third').addEventListener('click', () => toggleRunner('third'));
+document.getElementById('btn-record-runners').addEventListener('click', pressRecordRunners);
+document.getElementById('btn-stolen-base').addEventListener('click', pressStolenBase);
+document.getElementById('btn-runner-out').addEventListener('click', pressRunnerOut);
+
+
 /* タッチ・クリックの視覚フィードバック（シンプル） */
-document.querySelectorAll('.btn, .team, .small, .halfbox').forEach(el=>{
+document.querySelectorAll('.btn, .team, .small, .halfbox, .base-indicator').forEach(el=>{
   el.addEventListener('touchstart', ()=> el.style.opacity = 0.7, {passive:true});
   el.addEventListener('touchend', ()=> el.style.opacity = 1, {passive:true});
   el.addEventListener('mousedown', ()=> el.style.opacity = 0.7);
