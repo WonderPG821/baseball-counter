@@ -235,13 +235,6 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
     </table>
   </div>
   </div>
-  <div class="actions" id="main-actions-row">
-    <div class="btn" id="btn-run">Run</div>
-    <div class="btn" id="btn-hit-simple">Hit</div>
-    <div class="btn" id="btn-hit-trigger">Hit詳細</div>
-    <div class="btn" id="btn-deadball">DeadBall</div>
-    <div class="btn" id="btn-error">Error</div>
-  </div>
   
   <div id="hit-input-container" style="display: none;">
     <div class="hit-category-title">1. 結果種別 (必須)</div>
@@ -262,6 +255,22 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
     </div>
   </div>
 
+  <div class="pcounts">
+    <div class="pcount">
+      <div class="label">先攻P Count</div>
+      <input type="text" id="pname-sen" class="p-name-input" value="先攻 投手1" placeholder="投手名" onblur="logPitcherName('sen')" />
+      <div class="num" id="pcount-sen">0</div>
+    </div>
+    <div class="swap-area">
+      <button class="small" id="swap-sen">先攻P交代</button>
+      <button class="small" id="swap-go">後攻P交代</button>
+    </div>
+    <div class="pcount">
+      <div class="label">後攻P Count</div>
+      <input type="text" id="pname-go" class="p-name-input" value="後攻 投手1" placeholder="投手名" onblur="logPitcherName('go')" />
+      <div class="num" id="pcount-go">0</div>
+    </div>
+  </div>
   <div class="runners-area" style="background:var(--panel); padding:10px; border-radius:10px; margin-top:10px;">
     <div class="bases-container" style="display:flex; justify-content:center; gap:20px; margin-bottom:12px;">
     <div style="font-weight:700; text-align:center; color:var(--text); margin-bottom:8px;">ランナー(塁をタップ)</div>
@@ -285,27 +294,18 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
       <div class="btn" id="btn-runner-out" style="flex:1;">ランナーOut</div>
     </div>
   </div>
-  <div class="pcounts">
-    <div class="pcount">
-      <div class="label">先攻P Count</div>
-      <input type="text" id="pname-sen" class="p-name-input" value="先攻 投手1" placeholder="投手名" onblur="logPitcherName('sen')" />
-      <div class="num" id="pcount-sen">0</div>
-    </div>
-    <div class="swap-area">
-      <button class="small" id="swap-sen">先攻P交代</button>
-      <button class="small" id="swap-go">後攻P交代</button>
-    </div>
-    <div class="pcount">
-      <div class="label">後攻P Count</div>
-      <input type="text" id="pname-go" class="p-name-input" value="後攻 投手1" placeholder="投手名" onblur="logPitcherName('go')" />
-      <div class="num" id="pcount-go">0</div>
-    </div>
-  </div>
 
   <div class="batter-area" style="background:var(--panel); padding:10px; border-radius:10px; text-align:center; margin-top:1px;">
       <input type="text" id="batter-name" placeholder="バッター名" onblur="logBatterName()" style="width: 80%; max-width: 300px; margin-top: 1px; padding: 8px; border-radius: 6px; border: 1px solid #333; background: #242424; color: var(--text); text-align: center;" />
   </div>
 
+  <div class="actions" id="main-actions-row">
+    <div class="btn" id="btn-run">Run</div>
+    <div class="btn" id="btn-hit-simple">Hit</div>
+    <div class="btn" id="btn-hit-trigger">Hit詳細</div>
+    <div class="btn" id="btn-deadball">DeadBall</div>
+    <div class="btn" id="btn-error">Error</div>
+  </div>
   <div class="counters">
     <div class="counter-box">
       <div class="lamps">
