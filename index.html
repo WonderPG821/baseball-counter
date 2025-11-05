@@ -662,11 +662,11 @@ function copyLogToClipboard(){
     const deadBalls = stats.deadBalls;
     const fouls = stats.fouls; // <--- ADDED: foulsを取得
     const runs = stats.runs;
-    const strikeRate = totalP > 0 ? ((strikeP / (strikeP + ballP)) * 100).toFixed(1) + '%' : 'N/A';
+    const strikeRate = totalP > 0 ? ((strikeP / (strikeP + ballP + deadBalls)) * 100).toFixed(1) + '%' : 'N/A';
     statsSection += `--- ${pName.trim()} ---\n`;
     statsSection += ` 総投球数: ${totalP}投\n`;
-    statsSection += ` (ストライク/ボール: ${strikeP}/${ballP})\n`; // <--- MODIFIED: ファウル数を表示に追加
-    statsSection += ` ストライク成功率[ストライク÷(ストライク+ボール)]: ${strikeRate}\n`;
+    statsSection += ` ストライク/ボール: ${strikeP}/${ballP}\n`; // <--- MODIFIED: ファウル数を表示に追加
+    statsSection += ` ざっくりストライク成功率 [ ストライク数 ÷ （ストライク数 ＋ ボール数 + デッドボール数） ]: ${strikeRate}\n`;
     statsSection += ` 被安打数: ${hits}\n`;
     // ✅ 修正: フォアボール数とデッドボール数を分離して表示
     statsSection += ` フォアボール数(BB): ${walks}\n`;
