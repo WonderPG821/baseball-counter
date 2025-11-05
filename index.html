@@ -888,6 +888,39 @@ function pressSimpleHit(){
   renderAll();
 }
 
+// ✅ 新規追加: 四球時の自動進塁処理
+function advanceRunnersForWalk(){
+  const r_before = deepCopy(state.runners);
+  let runScored = false;
+  
+  // 1. 満塁チェックと押し出し得点処理
+  if (r_before.first && r_before.second && r_before.third) {
+    // 得点処理 (pressRunからhistory/renderを除いたロジック)
+    const side = (state.half === '表') ? 'sen' : 'go';
+    state.innings[state.inning][side] += 1;
+    state.total[side] += 1;
+    state.totals_RHE[side].R = state.total.sen; 
+    state.totals_RHE.go.R = state.total.go;
+    updatePitcherStat('runs'); 
+    runScored = true;
+  }
+  
+  // 2. 走者進塁処理 (1塁からの押し出し)
+  // 3塁: 元々いたか、2塁走者が押し出されたか (1塁が埋まっていた場合)
+  state.runners.third = r_before.third || (r_before.second && r_before.first); 
+  
+  // 2塁: 元々いたか、1塁走者が押し出されたか
+  state.runners.second = r_before.second || r_before.first; 
+  
+  // 1塁: 打者が進塁
+  state.runners.first = true;
+  
+  // 3. ログ記録 (詳細を追記)
+  let logMsg = runScored ? `【自動】押し出しにより得点！ ` : `【自動】四球による走者進塁。`;
+  addLog(logMsg + `現在の塁状況: ${getRunnersText()}`);
+}
+
+
 function pressBall(){
   if(!guardAction()) return;
   hideHitOptions();
@@ -903,7 +936,13 @@ function pressBall(){
     state.counts.ball = 0;
     state.counts.strike = 0;
     updatePitcherStat('walks'); // 📝 Walk (四球)はwalksに加算
-    addLog('Walk (Ball 4) => B,S reset. ランナー状況は手動で更新してください。');
+    
+    // ⬇️ 修正: 自動進塁処理を追加
+    advanceRunnersForWalk(); 
+    
+    // 修正: ログメッセージを自動処理が完了したことを示すものに変更
+    addLog('Walk (Ball 4) 完了 => B,S reset.');
+    
     incrementBatter('Walk'); 
   }
   renderAll();
@@ -1079,7 +1118,7 @@ function getRunnersText() {
     if (state.runners.first) bases.push('1塁');
     if (state.runners.second) bases.push('2塁');
     if (state.runners.third) bases.push('3塁');
-    return bases.length > 0 ? bases.join(', ') + 'にランナー' : 'ランナーなし';
+    return bases.length > 0 ? bases.join(', ') : 'ランナーなし';
 }
 
 function toggleRunner(base) {
@@ -1087,7 +1126,7 @@ function toggleRunner(base) {
   saveHistory();
   
   state.runners[base] = !state.runners[base];
-  addLog(`ベース状況手動切替: ${base} -> ${state.runners[base] ? 'ON' : 'OFF'}. 現在の状況: ${getRunnersText()}`);
+//  addLog(`ベース状況手動切替: ${base} -> ${state.runners[base] ? 'ON' : 'OFF'}. 現在の状況: ${getRunnersText()}`);
   renderRunners();
 }
 
@@ -1105,12 +1144,35 @@ function pressStolenBase() {
   hideHitOptions();
   saveHistory();
   
-  // 盗塁ロジック (最も遠いベースの走者を1つ進める。3塁走者はRun)
-  let logMsg = '盗塁失敗 - ランナーなし';
+  // ランナーの数を数える
+  const runnerCount = (state.runners.first ? 1 : 0) + 
+                      (state.runners.second ? 1 : 0) + 
+                      (state.runners.third ? 1 : 0);
+  
+  // ランナーが1人ではない場合は処理を中断
+  if (runnerCount !== 1) {
+      const logMsg = runnerCount === 0 
+          ? '盗塁失敗 - ランナーなし' 
+          : '盗塁';
+      // setMessage(logMsg, 2500); // 失敗または手動操作を促すメッセージを表示
+      addLog(logMsg);
+      history.pop(); // saveHistory()を打ち消す
+      actionLocked = false;
+      return;
+  }
+  
+  // 盗塁ロジック (ランナーが1人の場合のみ実行)
+  let logMsg = '盗塁'; 
   
   if (state.runners.third) {
       state.runners.third = false;
-      pressRun(); 
+      
+      const side = (state.half === '表') ? 'sen' : 'go';
+      state.innings[state.inning][side] += 1;
+      state.total[side] += 1;
+      state.totals_RHE[side].R = state.total.sen; // 総得点を更新
+      state.totals_RHE.go.R = state.total.go;
+  
       logMsg = '盗塁成功(3塁走者ホームイン) -> Run +1, 3塁クリア';
   } else if (state.runners.second) {
       state.runners.second = false;
@@ -1120,11 +1182,6 @@ function pressStolenBase() {
       state.runners.first = false;
       state.runners.second = true;
       logMsg = '盗塁成功(1塁走者2塁へ)';
-  } else {
-      setMessage(logMsg, 2000);
-      history.pop(); 
-      actionLocked = false;
-      return; 
   }
   
   addLog(logMsg + `. 現在の状況: ${getRunnersText()}`);
