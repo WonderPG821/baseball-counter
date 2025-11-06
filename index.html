@@ -82,10 +82,23 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
     margin-bottom: 4px !important;
 }
 
-.batter-area {
+/* 修正: batter-areaのID指定と基本スタイル */
+#batter-area { /* IDで指定 */
     padding: 6px !important; 
     margin-top: 4px !important; 
+    text-align:center;
+    border-radius:10px;
+    background: var(--panel); /* 規定色 */
+    transition: background 0.3s ease; /* 色切り替えを滑らかに */
 }
+/* batter-areaの攻守別スタイル */
+.batter-area-omote {
+    background: #2563eb !important; /* 青 */
+}
+.batter-area-ura {
+    background: #de2c3b !important; /* 赤 */
+}
+
 #batter-name {
     padding: 6px !important;
     font-size: 14px !important;
@@ -189,7 +202,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
 <body>
 <div class="wrap" id="app">
   <div class="top">
-    <div class="team" id="panel-sen" data-side="sen">
+    <div class="team" id="panel-sen" data-side="sen" style="background:var(--blue);">
       <input type="text" id="teamname-sen" class="p-name-input" value="先攻" placeholder="チーム名" onblur="logTeamName('sen')" /> 
       <div class="score" id="score-sen">0</div>
     </div>
@@ -205,7 +218,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
       </div>
     </div>
 
-    <div class="team" id="panel-go" data-side="go">
+    <div class="team" id="panel-go" data-side="go" style="background:var(--red);">
       <input type="text" id="teamname-go" class="p-name-input" value="後攻" placeholder="チーム名" onblur="logTeamName('go')" />
       <div class="score" id="score-go">0</div>
     </div>
@@ -305,8 +318,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
     </div>
   </div>
 
-  <div class="batter-area" style="background:var(--panel); padding:10px; border-radius:10px; text-align:center; margin-top:1px;">
-      <input type="text" id="batter-name" placeholder="バッター名" onblur="logBatterName()" style="width: 80%; max-width: 300px; margin-top: 1px; padding: 8px; border-radius: 6px; border: 1px solid #333; background: #242424; color: var(--text); text-align: center;" />
+  <div id="batter-area"> <input type="text" id="batter-name" placeholder="バッター名" onblur="logBatterName()" style="width: 80%; max-width: 300px; margin-top: 1px; padding: 8px; border-radius: 6px; border: 1px solid #333; background: #242424; color: var(--text); text-align: center;" />
   </div>
 
   <div class="actions" id="main-actions-row">
@@ -542,13 +554,22 @@ function renderHeader(){
   document.getElementById('score-go').textContent = state.total.go;
   document.getElementById('inning-display').textContent = state.inning + '回';
   const halfEl = document.getElementById('half-display');
+  const batterAreaEl = document.getElementById('batter-area'); // ✅ batter-areaを取得
+
   halfEl.textContent = state.half;
+  // --- 色切り替えロジックの修正/統合 ---
   if(state.half === '表'){
     halfEl.style.background = "var(--blue)";
     halfEl.style.color = "#fff";
+    // ✅ batter-areaのスタイル切り替え
+    batterAreaEl.classList.remove('batter-area-ura');
+    batterAreaEl.classList.add('batter-area-omote');
   } else {
     halfEl.style.background = "var(--red)";
     halfEl.style.color = "#fff";
+    // ✅ batter-areaのスタイル切り替え
+    batterAreaEl.classList.remove('batter-area-omote');
+    batterAreaEl.classList.add('batter-area-ura');
   }
 }
 function renderInnings(){
@@ -665,7 +686,7 @@ function copyLogToClipboard(){
     const strikeRate = totalP > 0 ? ((strikeP / (strikeP + ballP + deadBalls)) * 100).toFixed(1) + '%' : 'N/A';
     statsSection += `--- ${pName.trim()} ---\n`;
     statsSection += ` 総投球数: ${totalP}投\n`;
-    statsSection += ` ストライク/ボール: ${strikeP}/${ballP}\n`; // <--- MODIFIED: ファウル数を表示に追加
+    statsSection += ` ストライク/ボール: ${strikeP}/${ballP}\n`;
     statsSection += ` ざっくりストライク成功率 [ ストライク数 ÷ （ストライク数 ＋ ボール数 + デッドボール数） ]: ${strikeRate}\n`;
     statsSection += ` 被安打数: ${hits}\n`;
     // ✅ 修正: フォアボール数とデッドボール数を分離して表示
